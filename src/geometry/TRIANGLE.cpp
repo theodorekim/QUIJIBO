@@ -203,3 +203,23 @@ void TRIANGLE::boundingBox(VEC3F& mins, VEC3F& maxs)
         maxs[y] = (*_vertices[x])[y];
     }
 }
+
+//////////////////////////////////////////////////////////////////////
+// draw this triangle to GL
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE::draw()
+{
+  /*
+  // recompute normals every time
+  _normal = cross(*_vertices[1] - *_vertices[0], 
+                  *_vertices[2] - *_vertices[0]);
+  _normal.normalize();
+  // glColor4f(_color[0],_color[1],_color[2],1);
+  glBegin(GL_TRIANGLES);
+    glNormal3f(_normal[0], _normal[1], _normal[2]);
+    glVertex3f((*_vertices[0])[0], (*_vertices[0])[1], (*_vertices[0])[2]);
+    glVertex3f((*_vertices[1])[0], (*_vertices[1])[1], (*_vertices[1])[2]);
+    glVertex3f((*_vertices[2])[0], (*_vertices[2])[1], (*_vertices[2])[2]);
+  glEnd();
+  */
+}

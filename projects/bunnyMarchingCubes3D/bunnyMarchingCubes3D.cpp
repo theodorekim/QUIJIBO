@@ -27,8 +27,8 @@ OPTIMIZE_3D optimize3D;
 string outputPrefix("./temp/temp");
 
 float minValue;
-//float transformValue = 1.41;
-float transformValue = 0;
+float transformValue = 1.41;
+//float transformValue = 0;
 float maxValue;
 int steps;
 int maxIterations = 1;
@@ -496,6 +496,9 @@ int main(int argc, char* argv[])
   VEC3F& center = optimize3D.fractal().center();
   VEC3F& lengths = optimize3D.fractal().lengths();
 
+  cout << " Original center: " << center << endl;
+  cout << " Original lengths: " << lengths << endl;
+
   // first zoom
   //center = VEC3F(-0.953853, 1.096036, 2.767263 - transformValue);
   //lengths *= 0.5;
@@ -507,6 +510,10 @@ int main(int argc, char* argv[])
   // third zoom
   //center = VEC3F(-0.855658, 1.117847, 2.689409 - transformValue);
   //lengths *= 0.1 * 0.1;
+
+  // third zoom, second attempt
+  center = VEC3F(-0.855658, 1.117847, 2.689409- transformValue);
+  lengths *= 0.1 * 0.25;
 
   //center = lengths;
   //center *= 0.25;

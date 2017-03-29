@@ -95,4 +95,6 @@ inline __float128 pow(const __float128& q, const __float128& p)   { return powq(
 #define NDEBUG
 #endif
 
+#include <GL/glut.h>
+
 #endif
