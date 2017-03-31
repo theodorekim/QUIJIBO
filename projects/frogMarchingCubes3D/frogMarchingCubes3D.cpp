@@ -27,7 +27,8 @@ OPTIMIZE_3D optimize3D;
 string outputPrefix("./temp/temp");
 
 float minValue;
-float transformValue = 1.07;
+//float transformValue = 1.07;
+float transformValue = 0;
 float maxValue;
 int steps;
 int maxIterations = 1;
@@ -495,6 +496,10 @@ int main(int argc, char* argv[])
   cout << " Allocating initial fields ... " << flush;
   VEC3F center = optimize3D.fractal().center();
   VEC3F lengths = optimize3D.fractal().lengths();
+
+  // debugging the line search problems
+  center  = VEC3F(-1.2782,-0.870793,-1.4666);
+  lengths = VEC3F(1.04275,1.04275,1.04275);
 
   optimize3D.fractal() = FIELD_3D(res,res,res, center, lengths);
   //optimize3D.auxiliary() = FIELD_3D(res,res,res, center, lengths);

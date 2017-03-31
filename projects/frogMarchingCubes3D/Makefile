@@ -1,6 +1,7 @@
 include ../include.mk
 
-CC         = g++
+#CC         = g++
+CC         = /opt/local/bin/gcc-mp-5
 CFLAGS     = ${CFLAGS_COMMON}
 LDFLAGS    = ${LDFLAGS_COMMON}
 EXECUTABLE = ../../bin/frogMarchingCubes3D
