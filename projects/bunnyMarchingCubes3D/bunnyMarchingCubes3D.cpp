@@ -27,8 +27,8 @@ OPTIMIZE_3D optimize3D;
 string outputPrefix("./temp/temp");
 
 float minValue;
-float transformValue = 1.41;
-//float transformValue = 0;
+//float transformValue = 1.41;
+float transformValue = 0;
 float maxValue;
 int steps;
 int maxIterations = 1;
@@ -512,8 +512,14 @@ int main(int argc, char* argv[])
   //lengths *= 0.1 * 0.1;
 
   // third zoom, second attempt
-  center = VEC3F(-0.855658, 1.117847, 2.689409- transformValue);
-  lengths *= 0.1 * 0.25;
+  //center = VEC3F(-0.855658, 1.117847, 2.689409- transformValue);
+  //lengths *= 0.1 * 0.25;
+
+  // debugging 10 iterations on the centered bunny
+  //center  = VEC3F(-1.21029,-0.763689,0);
+  //lengths = VEC3F(0.593117,0.593117,0.593117);
+  center  = VEC3F(-0.066911,-0.867573,-0.160586); 
+  lengths = VEC3F(0.247994,0.247994,0.247994);
 
   //center = lengths;
   //center *= 0.25;

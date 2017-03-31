@@ -57,6 +57,8 @@ int WIDTH = 4;
 int startingFree;
 float zSlice = 0.5f;
 
+bool spinning = true;
+
 GLVU glvu;
 VEC3 center;
 VEC3 lengths;
@@ -114,12 +116,27 @@ void userDisplayFunc()
 
     glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
     objFile.draw();
+
+    // draw a box outline
     glColor4f(1.0f, 1.0f, 1.0f, 10.0f);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDisable(GL_LIGHTING);
-    box.draw();
+    glDisable(GL_CULL_FACE);
+      box.draw();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glEnable(GL_CULL_FACE);
     glEnable(GL_LIGHTING);
+
+    // draw the center
+    glColor4f(1.0f, 0.0f, 0.0f, 10.0f);
+    glPointSize(10);
+    VEC3F boxCenter = box.center();
+    glDisable(GL_LIGHTING);
+    glBegin(GL_POINTS);
+      glVertex3f(boxCenter[0], boxCenter[1], boxCenter[2]);
+    glEnd();
+    glEnable(GL_LIGHTING);
+
   glvu.EndFrame();
 }
 
@@ -128,10 +145,11 @@ void userDisplayFunc()
 //////////////////////////////////////////////////////////////////////////////
 void userKeyboardFunc(unsigned char Key, int x, int y)
 {
-  static int steps = 0;
-  
   switch(Key)
   {
+    case ' ':
+      spinning = !spinning;
+      break;
     case 'v':
       {
         Camera* camera = glvu.GetCurrentCam();
@@ -148,11 +166,69 @@ void userKeyboardFunc(unsigned char Key, int x, int y)
     case 'Q':
       exit(0);
       break;
+  }
+
+  // if we're spinning the camera, all done
+  if (spinning)
+  {
+    glvu.Keyboard(Key,x,y);
+    return;
+  }
+
+  static int steps = 0;
+  
+  switch(Key)
+  {
+    case 's':
+      {
+        box.scale(0.95);
+        break;
+      }
+    case 'S':
+      {
+        box.scale(1.05);
+        break;
+      }
+    case 'x':
+      {
+        box.translateX(-0.025);
+        break;
+      }
+    case 'X':
+      {
+        box.translateX(0.025);
+        break;
+      }
+
+    case 'y':
+      {
+        box.translateY(-0.025);
+        break;
+      }
+    case 'Y':
+      {
+        box.translateY(0.025);
+        break;
+      }
+
+    case 'z':
+      {
+        box.translateZ(-0.025);
+        break;
+      }
+    case 'Z':
+      {
+        box.translateZ(0.025);
+        break;
+      }
   };
 
+  VEC3F center  = box.center();
+  VEC3F lengths = box.lengths();
+  cout << "center  = VEC3F(" << center[0] << "," << center[1] << "," << center[2] << ");" << endl;
+  cout << "lengths = VEC3F(" << lengths[0] << "," << lengths[1] << "," << lengths[2] << ");" << endl;
+
   glutPostRedisplay();
-  if (Key != '=')
-    glvu.Keyboard(Key,x,y);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -218,11 +294,13 @@ int glvuWindow()
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
-  objFile.Load("./meshes/bunny_small_zoom_0.res.50.iterations.3_translationz.obj");
+  //objFile.Load("./meshes/bunny_small_zoom_0.res.50.iterations.3_translationz.obj");
+  //objFile.Load("./meshes/bunny_zoom_0.res.1100.iterations.3.obj");
+  objFile.Load(argv[1]);
   objFile.ComputeVertexNormals();
 
-  //center = VEC3(0,0,0);
-  center = VEC3(0,0,1.41);
+  center = VEC3(0,0,0);
+  //center = VEC3(0,0,1.41);
   lengths = VEC3(3.06186, 3.06186, 3.06186);
   box = BOX(center, lengths);  
 

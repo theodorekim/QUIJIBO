@@ -68,7 +68,7 @@
   <shape type="obj">
       <!--<string name="filename" value="../meshes/bunny_small.obj"/>-->
       <!--<string name="filename" value="../meshes/bunny_small_zoom_1.res.50.iterations.3_translationz.obj"/>-->
-      <string name="filename" value="../meshes/bunny_zoom_1.res.1100.iterations.3.obj"/>
+      <string name="filename" value="../meshes/bunny_zoom_3.res.1100.iterations.3.obj"/>
     <!-- NOTE: transforms are NOT in reverse order in Mitsuba!" -->
     <transform name="toWorld">
       <translate x="0" y="0" z="-1.41"/>

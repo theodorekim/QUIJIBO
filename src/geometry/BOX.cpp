@@ -128,38 +128,50 @@ void BOX::draw()
   glEnd();
 }
 
-void BOX::translateX(float delta)
+void BOX::scaleX(float scale)
 {
-  _xPlus += delta;
-  _xMinus += delta;
+  //_xPlus += delta;
+  //_xMinus -= delta;
+  float middle = (_xPlus + _xMinus) * 0.5;
+  _xPlus  = (_xPlus  - middle) * scale + middle;
+  _xMinus = (_xMinus - middle) * scale + middle;
 }
 
-void BOX::translateY(float delta)
+void BOX::scaleY(float scale)
 {
-  _yPlus += delta;
-  _yMinus += delta;
+  //_yPlus += delta;
+  //_yMinus -= delta;
+  float middle = (_yPlus + _yMinus) * 0.5;
+  _yPlus  = (_yPlus  - middle) * scale + middle;
+  _yMinus = (_yMinus - middle) * scale + middle;
 }
 
-void BOX::translateZ(float delta)
+void BOX::scaleZ(float scale)
 {
-  _zPlus += delta;
-  _zMinus += delta;
+  //_zPlus += delta;
+  //_zMinus -= delta;
+  float middle = (_zPlus + _zMinus) * 0.5;
+  _zPlus  = (_zPlus  - middle) * scale + middle;
+  _zMinus = (_zMinus - middle) * scale + middle;
 }
 
-void BOX::scaleX(float delta)
+void BOX::translateX(float fraction)
 {
-  _xPlus += delta;
-  _xMinus -= delta;
+  float length = _xPlus - _xMinus;
+  _xPlus  += fraction * length;
+  _xMinus += fraction * length;
 }
 
-void BOX::scaleY(float delta)
+void BOX::translateY(float fraction)
 {
-  _yPlus += delta;
-  _yMinus -= delta;
+  float length = _yPlus - _yMinus;
+  _yPlus  += fraction * length;
+  _yMinus += fraction * length;
 }
 
-void BOX::scaleZ(float delta)
+void BOX::translateZ(float fraction)
 {
-  _zPlus += delta;
-  _zMinus -= delta;
+  float length = _zPlus - _zMinus;
+  _zPlus  += fraction * length;
+  _zMinus += fraction * length;
 }

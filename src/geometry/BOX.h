@@ -34,16 +34,29 @@ public:
 
   virtual void draw();
 
-  void translateX(float delta = 0.01);
-  void translateY(float delta = 0.01);
-  void translateZ(float delta = 0.01);
+  void translateX(float fraction);
+  void translateY(float fraction);
+  void translateZ(float fraction);
 
-  void scaleX(float delta = 0.01);
-  void scaleY(float delta = 0.01);
-  void scaleZ(float delta = 0.01);
+  void scaleX(float scale);
+  void scaleY(float scale);
+  void scaleZ(float scale);
+  void scale(float scale)
+  {
+    scaleX(scale);
+    scaleY(scale);
+    scaleZ(scale);
+  }
 
   VEC3F boxMins() { return VEC3F(_xMinus, _yMinus, _zMinus); };
   VEC3F boxMaxs() { return VEC3F(_xPlus, _yPlus, _zPlus); };
+
+  VEC3F center() { return VEC3F((_xPlus + _xMinus) * 0.5,
+                                (_yPlus + _yMinus) * 0.5,
+                                (_zPlus + _zMinus) * 0.5); };
+  VEC3F lengths() { return VEC3F((_xPlus - _xMinus),
+                                 (_yPlus - _yMinus),
+                                 (_zPlus - _zMinus)); };
 
 private:
   float _xPlus, _xMinus;

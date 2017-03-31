@@ -3,7 +3,8 @@ include ../include.mk
 #LDFLAGS_COMMON = -framework GLUT -framework OpenGL -framework Cocoa -framework Accelerate -lz
 #CFLAGS_COMMON = -O3 -c -Wall -I../../src/glvu/ -I../../src/geometry/ -I/opt/local/include -I/opt/X11/include
 
-CC         = g++
+#CC         = g++
+CC         = /opt/local/bin/gcc-mp-5
 CFLAGS     = ${CFLAGS_COMMON} -I../../src/glvu/
 LDFLAGS    = ${LDFLAGS_COMMON} -framework GLUT -framework OpenGL -framework Cocoa
 EXECUTABLE = ../../bin/objViewer
