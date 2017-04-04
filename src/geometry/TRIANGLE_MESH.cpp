@@ -70,6 +70,7 @@ TRIANGLE_MESH::TRIANGLE_MESH(const FIELD_3D& field, const POLYNOMIAL_4D& top, co
   _maxIterations = maxIterations;
   _quaternionSlice = slice;
   _isosurface = isosurface;
+  _escapeRadius = 2000.0;
 
   computeNonlinearMarchingCubes(field);
 }
@@ -89,6 +90,7 @@ TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, VEC3I& r
   _maxIterations = maxIterations;
   _quaternionSlice = slice;
   _isosurface = isosurface;
+  _escapeRadius = 2000.0;
 
   computeNonlinearMarchingCubesLowMemory();
 }
@@ -258,7 +260,8 @@ void TRIANGLE_MESH::computeNonlinearSlice(const int z, FIELD_2D& field)
   if (field.xRes() != xRes || field.yRes() != yRes)
     field.resizeAndWipe(xRes, yRes, _center, _lengths);
 
-  Real escape = 20.0;
+  //Real escape = 20.0;
+  Real escape = _escapeRadius;
 #pragma omp parallel
 #pragma omp for schedule(dynamic)
   for (int y = 0; y < yRes; y++)
@@ -1138,7 +1141,8 @@ Real TRIANGLE_MESH::nonlinearValue(const VEC3F& position, const bool debug)
  
   // TODO: fractal should really be passing this in ...
   int maxIterations = _maxIterations;
-  Real escape = 20.0;
+  //Real escape = 20.0;
+  Real escape = _escapeRadius;
 
   Real magnitude = iterate.magnitude();
   int totalIterations = 0;
@@ -1180,7 +1184,8 @@ Real TRIANGLE_MESH::quadraticValue(const VEC3F& position, const bool debug)
  
   // TODO: fractal should really be passing this in ...
   int maxIterations = _maxIterations;
-  Real escape = 2.0;
+  //Real escape = 2.0;
+  Real escape = _escapeRadius;
 
   Real magnitude = iterate.magnitude();
   int totalIterations = 0;

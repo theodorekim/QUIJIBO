@@ -15,6 +15,7 @@ SOURCES    = bunnyMarchingCubes3D.cpp \
 					../../src/geometry/FIELD_3D.cpp \
 					../../src/geometry/TRIANGLE_MESH.cpp \
 					../../src/geometry/TRIANGLE.cpp \
+					../../src/util/SIMPLE_PARSER.cpp \
 					../../src/util/TIMER.cpp \
 					../../src/solvers/OPTIMIZE_3D.cpp 
 

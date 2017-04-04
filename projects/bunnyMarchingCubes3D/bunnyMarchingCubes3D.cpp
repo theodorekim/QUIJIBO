@@ -14,6 +14,7 @@
 #include "OPTIMIZE_3D.h"
 #include "TRIANGLE_MESH.h"
 //#include "glvu.h"
+#include "SIMPLE_PARSER.h"
 
 using namespace std;
 
@@ -396,13 +397,14 @@ void marchZeroRoot(const VEC3F& direction, const string& descriptor)
 //    0 to 2.0 along (0,1,0,0) makes it disappear, even more quickly than x
 //    0 to 2.0 along (0,0,1,0) makes it disappear, also very quickly
 //////////////////////////////////////////////////////////////////////////////
-void marchTranslations(const VEC3F& direction, const string& descriptor)
+void marchTranslations(const VEC3F& translation, const string& descriptor)
 {
   float delta = transformValue;
   //VEC3F      vDelta(0, 0, delta);
   //VEC3F      vDelta(0, delta, 0);
   //VEC3F      vDelta(delta, 0, 0);
-  VEC3F      vDelta = direction * (Real)delta;
+  //VEC3F      vDelta = direction * (Real)delta;
+  VEC3F      vDelta = translation;
 
   //QUATERNION qDelta(0, 0, delta, 0);
   QUATERNION qDelta(vDelta[0], vDelta[1], vDelta[2], 0);
@@ -445,8 +447,14 @@ void marchTranslations(const VEC3F& direction, const string& descriptor)
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-int main(int argc, char* argv[])
+int mainOld(int argc, char* argv[])
 {
+  string cfg(argv[1]);
+  SIMPLE_PARSER parser(cfg);
+
+  VEC3 parsed = parser.getVector3("root translation", VEC3(0,0,0));
+  exit(0);
+
   if (sizeof(Real) == sizeof(double))
     cout << " OPTIMIZING USING DOUBLE PRECISION " << endl;
   else if (sizeof(Real) == sizeof(float))
@@ -616,6 +624,68 @@ int main(int argc, char* argv[])
     cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
   }
   */
+
+  return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+int main(int argc, char* argv[])
+{
+  if (argc != 2)
+  {
+    cout << " USAGE: " << argv[0] << " <config file>" << endl;
+    return 0;
+  }
+
+  string cfg(argv[1]);
+  SIMPLE_PARSER parser(cfg);
+
+  /*
+  // which transformation are we doing?
+  string transform(argv[5]);
+  transformValue = atof(argv[6]); 
+  cout << " Using transform type: " << transform.c_str() << endl;
+  //cout << " Min: " << minValue << " Max: " << maxValue << " Steps: " << steps << endl;
+  cout << " Transform value: " << transformValue << endl;
+  */
+
+  string filename       = parser.getString("optimization file", string(""), true);
+  VEC3F rootTranslation = parser.getVector3("root translation", VEC3(0,0,0));
+  outputPrefix     = parser.getString("output prefix", string("./temp/temp"));
+  res              = parser.getInt("field res", 50);
+  maxIterations    = parser.getInt("max iterations", 3);
+
+  cout << " Using input file:       " << filename.c_str() << endl;
+  cout << " Using root translation: " << rootTranslation << endl;
+  cout << " Using output prefix:    " << outputPrefix.c_str() << endl;
+  cout << " Using resolution:       " << res << endl;
+  cout << " Using max iterations:   " << maxIterations << endl;
+
+  optimize3D.read(filename.c_str());
+  VEC3F& center = optimize3D.fractal().center();
+  VEC3F& lengths = optimize3D.fractal().lengths();
+
+  VEC3 centerNew  = parser.getVector3("field center", center);
+  VEC3 lengthsNew = parser.getVector3("field lengths", lengths);
+
+  cout << " Original center: " << center << endl;
+  cout << " Original lengths: " << lengths << endl;
+  cout << " New center: " << centerNew << endl;
+  cout << " New lengths: " << lengthsNew << endl;
+
+  // need to translate the center by the root translation
+  centerNew -= rootTranslation;
+
+  center = centerNew;
+  lengths = lengthsNew;
+
+  cout << " Allocating initial fields ... " << flush;
+  optimize3D.fractal() = FIELD_3D(res,res,res, center, lengths);
+  cout << " done. " << endl;
+
+  cout << " Rendering root Z translations " << endl;
+  marchTranslations(rootTranslation, "translationz");
 
   return 0;
 }

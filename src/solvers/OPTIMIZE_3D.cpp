@@ -1287,7 +1287,8 @@ void OPTIMIZE_3D::computeLogScaledPowerRationalMap(const POLYNOMIAL_4D& top, con
   Real zMin = -_lengths[2] * 0.5;
 #endif
 
-  Real escape = 20.0;
+  //Real escape = 20.0;
+  Real escape = 2000.0;
   if (verbose)
     cout << " Computing powerized rational Julia set ... " << flush;
 

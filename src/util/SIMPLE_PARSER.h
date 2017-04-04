@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <vector>
 #include <map>
+#include <VEC3.h>
 
 using namespace std;
 
@@ -51,6 +52,7 @@ class SIMPLE_PARSER
 		bool     getBool(string name,   bool defaultValue,   bool needed=false);
 		double   getFloat(string name,  double defaultValue, bool needed=false);
     string   getString(string name, string defaultValue, bool needed=false);
+    VEC3     getVector3(string name, VEC3 defaultValue, bool needed=false);
 
 		// check if there were any unused pairs
 		bool haveUnusedValues();

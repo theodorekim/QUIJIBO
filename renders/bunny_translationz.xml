@@ -8,8 +8,8 @@
   </integrator>
 
   <sensor type="perspective">
-    <string name="fovAxis" value="smaller"/>
     <!--
+    <string name="fovAxis" value="smaller"/>
     <float name="nearClip" value="0.01"/>
     <float name="farClip" value="10"/>
     <float name="focusDistance" value="1000"/>
@@ -33,12 +33,18 @@
     <float name="farClip" value="10"/>
     <float name="focusDistance" value="1000"/>
 	<transform name="toWorld">
+      <!--
       <matrix value=" -0.985287, -0.146489, -0.0880373, 0.793056
         0.166223, -0.701584, -0.692928, 0.310388
         0.0397407, -0.697367, 0.715612, 0.313982
-        0, 0, 0, 1"/>      
+        0, 0, 0, 1"/>
+        -->
+      <matrix value="0.1127, -0.286469, -0.951438, 0.783681
+                     0.728263, -0.627601, 0.275229, 0.0698299
+                     -0.675968, -0.723915, 0.137894, 0.423127
+                     0, 0, 0, 1"/>
     </transform>
-	<float name="fov" value="64.9944"/>
+	<float name="fov" value="94.4968"/>
 
 	<sampler type="ldsampler">
 		<integer name="sampleCount" value="64"/>
@@ -61,14 +67,16 @@
       <integer name="width" value="1280"/>
       <integer name="height" value="960"/>
       -->
-      <integer name="width" value="320"/>
-      <integer name="height" value="240"/>
+      <integer name="width" value="1920"/>
+      <integer name="height" value="1080"/>
     </film>
   </sensor>
   <shape type="obj">
       <!--<string name="filename" value="../meshes/bunny_small.obj"/>-->
       <!--<string name="filename" value="../meshes/bunny_small_zoom_1.res.50.iterations.3_translationz.obj"/>-->
-      <string name="filename" value="../meshes/bunny_zoom_3.res.1100.iterations.3.obj"/>
+      <!--<string name="filename" value="../meshes/bunny_5000_zoom_2.res.1100.iterations.4_translationz.obj"/>-->
+      <string name="filename" value="../meshes/bunny_5000_zoom_2.res.1100.iterations.9_translationz.obj"/>
+      <!--<string name="filename" value="../meshes/bunny_zoom_2.res.1100.iterations.3.obj"/>-->
     <!-- NOTE: transforms are NOT in reverse order in Mitsuba!" -->
     <transform name="toWorld">
       <translate x="0" y="0" z="-1.41"/>

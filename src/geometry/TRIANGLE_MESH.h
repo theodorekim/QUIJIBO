@@ -281,6 +281,8 @@ private:
   int _maxIterations;
   Real _quaternionSlice;
   Real _isosurface;
+
+  Real _escapeRadius;
  
   // constant for just quadratic Julia set
   QUATERNION _quadraticConst;
