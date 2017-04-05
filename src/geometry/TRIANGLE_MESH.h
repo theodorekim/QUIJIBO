@@ -45,7 +45,10 @@ public:
   TRIANGLE_MESH(const FIELD_3D& field, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface);
 
   // do a non-linear marching cubes on just two slabs at a shot
-  TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, VEC3I& res, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface);
+  TRIANGLE_MESH(const VEC3F& center, 
+                const VEC3F& lengths, 
+                const VEC3I& res, 
+                const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface);
   
   // non-linear marching cubes for just the quadratic Julia set
   TRIANGLE_MESH(const FIELD_3D& field, const QUATERNION& qConst, const int maxIterations);

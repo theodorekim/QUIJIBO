@@ -37,14 +37,17 @@ int res = 97;
 
 Real isosurface = 0;
 
+#define USING_LOWMEMORY 1
+
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void computeFractal(int res)
 {
   TIMER functionTimer(__FUNCTION__);
+  optimize3D.maxIterations() = maxIterations;
+#if !USING_LOWMEMORY
   cout << " Computing fractal with res " << res << " ... " << flush;
 
-  optimize3D.maxIterations() = maxIterations;
   optimize3D.computeLogScaledPowerRationalMap(true);
   TIMER::printTimings();
   system("purge");
@@ -54,6 +57,7 @@ void computeFractal(int res)
   cout << " overflows: " << (int)optimize3D.overflowed().sum() << endl;
   cout << " infs: " << optimize3D.fractal().totalInfs() << endl;
   cout << " NaNs: " << optimize3D.fractal().totalNans() << endl;
+#endif
  
 #if 0
   cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
@@ -67,7 +71,14 @@ void computeFractal(int res)
   //optimize3D.fractal().write(outputField3D);
 
   if (triangleMesh) delete triangleMesh;
+#if USING_LOWMEMORY
+  triangleMesh = new TRIANGLE_MESH(optimize3D.fractal().center(),
+                                   optimize3D.fractal().lengths(),
+                                   VEC3I(res,res,res),
+                                   optimize3D.top(), optimize3D.bottom(), optimize3D.expScaling(), optimize3D.maxIterations(), optimize3D.slice(), isosurface);
+#else
   triangleMesh = new TRIANGLE_MESH(optimize3D.fractal(), optimize3D.top(), optimize3D.bottom(), optimize3D.expScaling(), optimize3D.maxIterations(), optimize3D.slice(), isosurface);
+#endif
   cout << " Marching cubes found " << triangleMesh->triangles().size() << " triangles " << endl;
 
   //VEC3F minBox, maxBox;
@@ -675,14 +686,16 @@ int main(int argc, char* argv[])
   cout << " New lengths: " << lengthsNew << endl;
 
   // need to translate the center by the root translation
-  centerNew -= rootTranslation;
+  //centerNew -= rootTranslation;
 
-  center = centerNew;
+  //center = centerNew;
   lengths = lengthsNew;
 
+#if !USING_LOWMEMORY
   cout << " Allocating initial fields ... " << flush;
   optimize3D.fractal() = FIELD_3D(res,res,res, center, lengths);
   cout << " done. " << endl;
+#endif
 
   cout << " Rendering root Z translations " << endl;
   marchTranslations(rootTranslation, "translationz");

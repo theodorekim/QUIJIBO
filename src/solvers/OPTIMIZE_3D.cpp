@@ -1352,97 +1352,12 @@ void OPTIMIZE_3D::computeLogScaledPowerRationalMap(const POLYNOMIAL_4D& top, con
           iterate *= _expScaling;
           magnitude = iterate.magnitude();
 
-          /*
-          iterates.push_back(iterate);
-          magnitudes.push_back(magnitude);
-          tops.push_back(topEval);
-          bottoms.push_back(bottomEval);
-
-          // DEBUG
-          if (isinf(log(magnitude)))
-          {
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            cout << " Found inf: " << log(magnitude) << std::endl;
-            cout << " Threshold: " << 10.0 * REAL_MIN << endl;
-            cout << " single: " << FLT_MIN << endl;
-            cout << " double: " << DBL_MIN << endl;
-            cout << " extended: " << LDBL_MIN << endl;
-            cout << " total iterations: " << totalIterations << endl;
-            cout << " (x,y,z): " << x << "," << y << "," << z << endl;
-            const QUATERNION original(xReal, yReal, zReal, _quaternionSlice);
-            cout << " original: " << original << endl;
-            cout << " iterates: " << endl;
-            for (int i = 0; i < iterates.size(); i++)
-              cout << iterates[i] << endl;
-            cout << " magnitudes: " << endl;
-            for (int i = 0; i < magnitudes.size(); i++)
-              cout << magnitudes[i] << endl;
-            cout << " tops: " << endl;
-            for (int i = 0; i < tops.size(); i++)
-              cout << tops[i] << endl;
-            cout << " bottoms: " << endl;
-            for (int i = 0; i < bottoms.size(); i++)
-              cout << bottoms[i] << endl;
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            //exit(0);
-          }
-          if (isnan(magnitude))
-          {
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            cout << " Found nan: " << magnitude << std::endl;
-            cout << " Threshold: " << 10.0 * REAL_MIN << endl;
-            cout << " single: " << FLT_MIN << endl;
-            cout << " double: " << DBL_MIN << endl;
-            cout << " extended: " << LDBL_MIN << endl;
-            cout << " total iterations: " << totalIterations << endl;
-            cout << " (x,y,z): " << x << "," << y << "," << z << endl;
-            const QUATERNION original(xReal, yReal, zReal, _quaternionSlice);
-            cout << " input: " << input << endl;
-
-            cout << " original: " << original << endl;
-            cout << endl;
-            cout << " iterates: " << endl;
-            for (int i = 0; i < iterates.size(); i++)
-              cout << iterates[i] << endl;
-            cout << endl;
-            cout << " magnitudes: " << endl;
-            for (int i = 0; i < magnitudes.size(); i++)
-              cout << magnitudes[i] << endl;
-            cout << endl;
-            cout << " tops: " << endl;
-            for (int i = 0; i < tops.size(); i++)
-              cout << tops[i] << endl;
-            cout << endl;
-            cout << " bottoms: " << endl;
-            for (int i = 0; i < bottoms.size(); i++)
-              cout << bottoms[i] << endl;
-            cout << endl;
-         
-            cout << " TOP: " << endl; 
-            QUATERNION redo = top.evaluateScaledPowerFactoredVerbose(input);
-            cout << endl;
-            cout << " BOTTOM: " << endl; 
-            QUATERNION redoBottom = bottom.evaluateScaledPowerFactoredVerbose(input);
-            cout << endl;
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-            exit(0);
-          }
-          */
-
           totalIterations++;
 
           // see if it fell into the black hole at the origin
           if (magnitude < 10.0 * REAL_MIN)
             totalIterations = _maxIterations;
         }
-
-        //Real logKnown = log(magnitude);
-        //Real logTrial = log(magnitudeTrial) + log(_expScaling);
 
         fractal(x,y,z) = log(magnitude);
       }

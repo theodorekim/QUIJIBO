@@ -78,7 +78,7 @@ TRIANGLE_MESH::TRIANGLE_MESH(const FIELD_3D& field, const POLYNOMIAL_4D& top, co
 //////////////////////////////////////////////////////////////////////
 // do a non-linear marching cubes on just two slabs at a shot
 //////////////////////////////////////////////////////////////////////
-TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, VEC3I& res, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface) :
+TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VEC3I& res, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface) :
   _res(res),
   _lengths(lengths), 
   _center(center), 
@@ -255,7 +255,6 @@ void TRIANGLE_MESH::computeNonlinearSlice(const int z, FIELD_2D& field)
 {
   int xRes = _res[0];
   int yRes = _res[1];
-  //int zRes = _res[2];
 
   if (field.xRes() != xRes || field.yRes() != yRes)
     field.resizeAndWipe(xRes, yRes, _center, _lengths);
@@ -296,6 +295,10 @@ void TRIANGLE_MESH::computeNonlinearSlice(const int z, FIELD_2D& field)
         magnitude = iterate.magnitude();
 
         totalIterations++;
+
+        // see if it fell into the black hole at the origin
+        if (magnitude < 10.0 * REAL_MIN)
+          totalIterations = _maxIterations;
       }
       field(x,y) = log(magnitude);
     }
@@ -329,9 +332,15 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
   // store all the meaningful flags <flag, index>
   vector<pair<int, int> > flags;
 
+  // number of nans and infs
+  int totalNans = 0;
+  int totalInfs = 0;
+
   FIELD_2D& slab0 = _slab0;
   FIELD_2D& slab1 = _slab1;
   computeNonlinearSlice(0, slab1);
+  totalNans += slab1.totalNans();
+  totalInfs += slab1.totalInfs();
 
   // build all the vertex pairs 
   _vertexPairs.clear();
@@ -344,6 +353,8 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
 
     // compute the next needed slice on the fly
     computeNonlinearSlice(z + 1, slab1);
+    totalNans += slab1.totalNans();
+    totalInfs += slab1.totalInfs();
 
     for (int y = 0; y < _yRes - 1; y++)
       for (int x = 0; x < _xRes - 1; x++) 
@@ -376,6 +387,9 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
     if (z % (int)(_zRes / 10) == 0)
       cout << 100 * ((Real)z / _zRes) << "% " << flush;
   }
+  cout << " done." << endl;
+  cout << " infs: " << totalInfs << endl;
+  cout << " NaNs: " << totalNans << endl;
 
   // compute the interpolations along the marching cubes edges
   computeNonlinearEdgeInterpolations();
