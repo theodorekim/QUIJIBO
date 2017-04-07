@@ -686,9 +686,9 @@ int main(int argc, char* argv[])
   cout << " New lengths: " << lengthsNew << endl;
 
   // need to translate the center by the root translation
-  //centerNew -= rootTranslation;
+  centerNew -= rootTranslation;
 
-  //center = centerNew;
+  center = centerNew;
   lengths = lengthsNew;
 
 #if !USING_LOWMEMORY

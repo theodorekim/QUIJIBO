@@ -1443,7 +1443,9 @@ VEC3F TRIANGLE_MESH::midpointSearch(const VEC3F& positiveVertex, const Real& pos
     return midpointVertex;
   }
 
-  if (recursion >= 100)
+  //if (recursion >= 100)
+  //if (recursion >= 20)
+  if (recursion >= 8)
   //if (recursion >= 1)
   {
     //cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
