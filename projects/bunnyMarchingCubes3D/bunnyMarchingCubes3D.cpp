@@ -72,10 +72,20 @@ void computeFractal(int res)
 
   if (triangleMesh) delete triangleMesh;
 #if USING_LOWMEMORY
+  string cachePath;
+  char buffer[256];
+  sprintf(buffer, ".res.%i.iterations.%i.cache", res, maxIterations);
+  string cacheFilename = outputPrefix + string(buffer);
   triangleMesh = new TRIANGLE_MESH(optimize3D.fractal().center(),
                                    optimize3D.fractal().lengths(),
                                    VEC3I(res,res,res),
-                                   optimize3D.top(), optimize3D.bottom(), optimize3D.expScaling(), optimize3D.maxIterations(), optimize3D.slice(), isosurface);
+                                   optimize3D.top(), 
+                                   optimize3D.bottom(), 
+                                   optimize3D.expScaling(), 
+                                   optimize3D.maxIterations(), 
+                                   optimize3D.slice(), 
+                                   isosurface, 
+                                   cacheFilename);
 #else
   triangleMesh = new TRIANGLE_MESH(optimize3D.fractal(), optimize3D.top(), optimize3D.bottom(), optimize3D.expScaling(), optimize3D.maxIterations(), optimize3D.slice(), isosurface);
 #endif
@@ -686,7 +696,7 @@ int main(int argc, char* argv[])
   cout << " New lengths: " << lengthsNew << endl;
 
   // need to translate the center by the root translation
-  centerNew -= rootTranslation;
+  //centerNew -= rootTranslation;
 
   center = centerNew;
   lengths = lengthsNew;

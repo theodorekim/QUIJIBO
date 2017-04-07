@@ -78,7 +78,7 @@ TRIANGLE_MESH::TRIANGLE_MESH(const FIELD_3D& field, const POLYNOMIAL_4D& top, co
 //////////////////////////////////////////////////////////////////////
 // do a non-linear marching cubes on just two slabs at a shot
 //////////////////////////////////////////////////////////////////////
-TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VEC3I& res, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface) :
+TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VEC3I& res, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface, const string& cacheFilename) :
   _res(res),
   _lengths(lengths), 
   _center(center), 
@@ -91,6 +91,7 @@ TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VE
   _quaternionSlice = slice;
   _isosurface = isosurface;
   _escapeRadius = 2000.0;
+  _cacheFilename = cacheFilename;
 
   computeNonlinearMarchingCubesLowMemory();
 }
@@ -304,6 +305,97 @@ void TRIANGLE_MESH::computeNonlinearSlice(const int z, FIELD_2D& field)
     }
 }
 
+//////////////////////////////////////////////////////////////////////
+// try to read in an edge cache
+//////////////////////////////////////////////////////////////////////
+bool TRIANGLE_MESH::readEdgeCache(vector<pair<int, int> >& flags)
+{
+  TIMER functionTimer(__FUNCTION__);
+  FILE* file = NULL;
+  file = fopen(_cacheFilename.c_str(), "rb");
+  if (file == NULL)
+  {
+    cout << " No cache file found: " << _cacheFilename.c_str() << " " << endl;
+    return false;
+  }
+  cout << " Cache file found: " << _cacheFilename.c_str() << endl;
+ 
+  // read in: map<pair<int, int>, bool> _vertexPairs;
+  int totalPairs;
+  fread((void*)&(totalPairs), sizeof(int), 1, file);
+
+  _vertexPairs.clear();
+  for (int x = 0; x < totalPairs; x++)
+  {
+    pair<int,int> vertexPair;
+    fread((void*)&(vertexPair.first), sizeof(int), 1, file);
+    fread((void*)&(vertexPair.second), sizeof(int), 1, file);
+    _vertexPairs[vertexPair] = true;
+  }
+
+  // read in: vector<pair<int, int> > flags
+  int totalFlags;
+  fread((void*)&(totalFlags), sizeof(int), 1, file);
+
+  flags.clear();
+  for (int x = 0; x < totalFlags; x++)
+  {
+    pair<int, int> flagPair;
+    fread((void*)&(flagPair.first), sizeof(int), 1, file);
+    fread((void*)&(flagPair.second), sizeof(int), 1, file);
+    flags.push_back(flagPair);
+  }
+
+  fclose(file);
+  return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+// write out an edge cache
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::writeEdgeCache(const vector<pair<int, int> >& flags)
+{
+  TIMER functionTimer(__FUNCTION__);
+  FILE* file = NULL;
+  file = fopen(_cacheFilename.c_str(), "wb");
+
+  if (file == NULL)
+  {
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    cout << " FAILED TO CACHE OUT EDGES: " << _cacheFilename.c_str() << endl;
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    return;
+  }
+
+  cout << " Writing out cache file " << _cacheFilename.c_str() << " ... " << flush;
+ 
+  // write out: map<pair<int, int>, bool> _vertexPairs;
+  int totalPairs = _vertexPairs.size(); 
+  fwrite((void*)&(totalPairs), sizeof(int), 1, file);
+
+  map<pair<int, int>, bool>::iterator iter;
+  for (iter = _vertexPairs.begin(); iter != _vertexPairs.end(); iter++)
+  {
+    pair<int,int> vertexPair = iter->first;
+    fwrite((void*)&(vertexPair.first), sizeof(int), 1, file);
+    fwrite((void*)&(vertexPair.second), sizeof(int), 1, file);
+  }
+  
+  // write out: vector<pair<int, int> > flags
+  int totalFlags = flags.size(); 
+  fwrite((void*)&(totalFlags), sizeof(int), 1, file);
+  for (int x = 0; x < flags.size(); x++)
+  {
+    pair<int, int> flagPair = flags[x];
+    fwrite((void*)&(flagPair.first), sizeof(int), 1, file);
+    fwrite((void*)&(flagPair.second), sizeof(int), 1, file);
+  }
+
+  fclose(file);
+  cout << " done. " << endl;
+}
 
 //////////////////////////////////////////////////////////////////////
 // perform marching cubes
@@ -312,8 +404,6 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
 {
   bool verbose = true;
   TIMER functionTimer(__FUNCTION__);
-  if (verbose)
-    cout << " Low-memory marching cubes ..." << flush;
 
   // clear any previous front
   _vertices.clear();
@@ -332,64 +422,14 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
   // store all the meaningful flags <flag, index>
   vector<pair<int, int> > flags;
 
-  // number of nans and infs
-  int totalNans = 0;
-  int totalInfs = 0;
-
-  FIELD_2D& slab0 = _slab0;
-  FIELD_2D& slab1 = _slab1;
-  computeNonlinearSlice(0, slab1);
-  totalNans += slab1.totalNans();
-  totalInfs += slab1.totalInfs();
-
-  // build all the vertex pairs 
-  _vertexPairs.clear();
-  for (int z = 0; z < _zRes - 1; z++)
+  // see if a previous run was cached before computing all the slices
+  if (readEdgeCache(flags) == false)
   {
-    // swap in the old "next" slice as the new current ont
-    FIELD_2D& old = slab0;
-    slab0 = slab1;
-    slab1 = old;
-
-    // compute the next needed slice on the fly
-    computeNonlinearSlice(z + 1, slab1);
-    totalNans += slab1.totalNans();
-    totalInfs += slab1.totalInfs();
-
-    for (int y = 0; y < _yRes - 1; y++)
-      for (int x = 0; x < _xRes - 1; x++) 
-      {
-        int index = x + y * _xRes + z * _slabSize;
-
-        CUBE cube;
-        cube.NNN = slab0(x,y);
-        cube.NNP = slab1(x,y);
-        cube.NPN = slab0(x,y + 1);
-        cube.NPP = slab1(x,y + 1);
-        cube.PNN = slab0(x + 1,y);
-        cube.PNP = slab1(x + 1,y);
-        cube.PPN = slab0(x + 1,y + 1);
-        cube.PPP = slab1(x + 1,y + 1);
-		
-        // construct the flag
-        int flag =    ((cube.NNN > 0) + 2 *   (cube.NNP > 0) + 4  * (cube.NPN > 0) +
-                   8 * (cube.NPP > 0) + 16 *  (cube.PNN > 0) + 32 * (cube.PNP > 0) +
-                   64 *(cube.PPN > 0) + 128 * (cube.PPP > 0));
-
-        if (flag == 0 || flag == 255) continue;
-
-        flags.push_back(pair<int, int>(flag, index));
-		
-        // three vertices are added to _vertexPairs here  
-        switch (flag)
-#include "MARCHING_CUBES_VERTICES.include" 
-      }
-    if (z % (int)(_zRes / 10) == 0)
-      cout << 100 * ((Real)z / _zRes) << "% " << flush;
+    if (verbose)
+      cout << " Low-memory marching cubes ..." << flush;
+    computeAllLowMemorySlices(flags);
+    writeEdgeCache(flags);
   }
-  cout << " done." << endl;
-  cout << " infs: " << totalInfs << endl;
-  cout << " NaNs: " << totalNans << endl;
   TIMER::printTimings();
 
   // compute the interpolations along the marching cubes edges
@@ -3913,4 +3953,71 @@ VEC3F TRIANGLE_MESH::cellCenter(int x, int y, int z)
   final[2] += _dxs[2] * 0.5;
 
   return final;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// compute all the slices for a low memory marching cubes
+////////////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::computeAllLowMemorySlices(vector<pair<int, int> >& flags)
+{
+  TIMER functionTimer(__FUNCTION__);
+
+  // number of nans and infs
+  int totalNans = 0;
+  int totalInfs = 0;
+
+  FIELD_2D& slab0 = _slab0;
+  FIELD_2D& slab1 = _slab1;
+  computeNonlinearSlice(0, slab1);
+  totalNans += slab1.totalNans();
+  totalInfs += slab1.totalInfs();
+
+  // build all the vertex pairs 
+  _vertexPairs.clear();
+  for (int z = 0; z < _zRes - 1; z++)
+  {
+    // swap in the old "next" slice as the new current ont
+    FIELD_2D& old = slab0;
+    slab0 = slab1;
+    slab1 = old;
+
+    // compute the next needed slice on the fly
+    computeNonlinearSlice(z + 1, slab1);
+    totalNans += slab1.totalNans();
+    totalInfs += slab1.totalInfs();
+
+    for (int y = 0; y < _yRes - 1; y++)
+      for (int x = 0; x < _xRes - 1; x++) 
+      {
+        int index = x + y * _xRes + z * _slabSize;
+
+        CUBE cube;
+        cube.NNN = slab0(x,y);
+        cube.NNP = slab1(x,y);
+        cube.NPN = slab0(x,y + 1);
+        cube.NPP = slab1(x,y + 1);
+        cube.PNN = slab0(x + 1,y);
+        cube.PNP = slab1(x + 1,y);
+        cube.PPN = slab0(x + 1,y + 1);
+        cube.PPP = slab1(x + 1,y + 1);
+		
+        // construct the flag
+        int flag =    ((cube.NNN > 0) + 2 *   (cube.NNP > 0) + 4  * (cube.NPN > 0) +
+                   8 * (cube.NPP > 0) + 16 *  (cube.PNN > 0) + 32 * (cube.PNP > 0) +
+                   64 *(cube.PPN > 0) + 128 * (cube.PPP > 0));
+
+        if (flag == 0 || flag == 255) continue;
+
+        flags.push_back(pair<int, int>(flag, index));
+		
+        // three vertices are added to _vertexPairs here  
+        switch (flag)
+#include "MARCHING_CUBES_VERTICES.include" 
+      }
+    if (z % (int)(_zRes / 10) == 0)
+      cout << 100 * ((Real)z / _zRes) << "% " << flush;
+  }
+  cout << " done." << endl;
+  cout << " infs: " << totalInfs << endl;
+  cout << " NaNs: " << totalNans << endl;
 }

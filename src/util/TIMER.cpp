@@ -54,10 +54,10 @@ TIMER::TIMER(string blockName) : _stopped(false)
 ///////////////////////////////////////////////////////////////////////
 TIMER::~TIMER()
 {
+  if (omp_in_parallel()) return;
   if (!_stopped) stop();
 
-  if (omp_in_parallel())
-    return;
+  /*
   assert(_callStack.size() > 0);
   
   string function = _callStack.top();
@@ -66,13 +66,14 @@ TIMER::~TIMER()
 
   _timings[function] += timing();
   gettimeofday(&_tick, 0);
+  */
 }
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void TIMER::stop()
 {
-  if (omp_in_parallel()) return;
+  //if (omp_in_parallel()) return;
   assert(_callStack.size() > 0);
   
   // remove this function from the internall tracked call stack

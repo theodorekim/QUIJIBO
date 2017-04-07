@@ -48,7 +48,13 @@ public:
   TRIANGLE_MESH(const VEC3F& center, 
                 const VEC3F& lengths, 
                 const VEC3I& res, 
-                const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface);
+                const POLYNOMIAL_4D& top, 
+                const POLYNOMIAL_4D& bottom, 
+                const Real expScaling, 
+                const int maxIterations, 
+                const Real slice, 
+                const Real isosurface,
+                const string& cacheFilename);
   
   // non-linear marching cubes for just the quadratic Julia set
   TRIANGLE_MESH(const FIELD_3D& field, const QUATERNION& qConst, const int maxIterations);
@@ -286,7 +292,10 @@ private:
   Real _isosurface;
 
   Real _escapeRadius;
- 
+
+  // path to cache intermediate results to
+  string _cacheFilename;
+
   // constant for just quadratic Julia set
   QUATERNION _quadraticConst;
 
@@ -333,8 +342,15 @@ private:
   // slice of the potential function
   void computeNonlinearSlice(const int z, FIELD_2D& field);
 
+  // compute all the slices for a low memory marching cubes
+  void computeAllLowMemorySlices(vector<pair<int, int> >& flags);
+
   // compute some coarse normals for each vertex
   void computeNormals();
+
+  // read/write an edge cache
+  bool readEdgeCache(vector<pair<int, int> >& flags);
+  void writeEdgeCache(const vector<pair<int, int> >& flags);
 
   // get the (x,y,z) of an index
   VEC3I getXYZ(const int index) const;
