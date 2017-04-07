@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "TIMER.h"
 #include <cassert>
-//#include <omp.h>
+#include <omp.h>
 #include <cstdio>
 
 using namespace std;
@@ -32,7 +32,7 @@ std::stack<std::string> TIMER::_callStack;
 ///////////////////////////////////////////////////////////////////////
 TIMER::TIMER(string blockName) : _stopped(false) 
 {
-  //if (omp_in_parallel()) return;
+  if (omp_in_parallel()) return;
 
   // look at the back of the call stack,
   // if there's something there, then store its timing
@@ -56,7 +56,6 @@ TIMER::~TIMER()
 {
   if (!_stopped) stop();
 
-  /*
   if (omp_in_parallel())
     return;
   assert(_callStack.size() > 0);
@@ -67,14 +66,13 @@ TIMER::~TIMER()
 
   _timings[function] += timing();
   gettimeofday(&_tick, 0);
-  */
 }
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void TIMER::stop()
 {
-  //if (omp_in_parallel()) return;
+  if (omp_in_parallel()) return;
   assert(_callStack.size() > 0);
   
   // remove this function from the internall tracked call stack
