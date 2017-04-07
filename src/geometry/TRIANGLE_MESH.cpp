@@ -390,6 +390,7 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
   cout << " done." << endl;
   cout << " infs: " << totalInfs << endl;
   cout << " NaNs: " << totalNans << endl;
+  TIMER::printTimings();
 
   // compute the interpolations along the marching cubes edges
   computeNonlinearEdgeInterpolations();
@@ -1220,7 +1221,6 @@ void TRIANGLE_MESH::computeNonlinearEdgeInterpolations()
 {
   TIMER functionTimer(__FUNCTION__);
   cout << " Computing non-linear edge interpolations ... " << flush;
-  //const FIELD_3D& field = *_toMarch;
   map<pair<int, int>, bool>::iterator iter;
  
   // flatten the map out to an array now that collision are resolved
@@ -1245,15 +1245,11 @@ void TRIANGLE_MESH::computeNonlinearEdgeInterpolations()
     int firstIndex = vertexPair.first;
     VEC3I firstXYZ = getXYZ(firstIndex);
     VEC3F firstVertex = cellCenter(firstXYZ[0], firstXYZ[1], firstXYZ[2]);
-    //VEC3F firstVertex = field.cellCenter(firstXYZ[0], firstXYZ[1], firstXYZ[2]);
-    //Real firstValue = nonlinearValue(firstVertex, true);
     Real firstValue = nonlinearValue(firstVertex, false);
     
     int secondIndex = vertexPair.second;
     VEC3I secondXYZ = getXYZ(secondIndex);
     VEC3F secondVertex = cellCenter(secondXYZ[0], secondXYZ[1], secondXYZ[2]);
-    //VEC3F secondVertex = field.cellCenter(secondXYZ[0], secondXYZ[1], secondXYZ[2]);
-    //Real secondValue = nonlinearValue(secondVertex, true);
     Real secondValue = nonlinearValue(secondVertex, false);
 
     VEC3F positiveVertex = firstVertex;
@@ -1263,19 +1259,21 @@ void TRIANGLE_MESH::computeNonlinearEdgeInterpolations()
 
     if (positiveValue * negativeValue >= 0.0)
     {
-      cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-      cout << " field dims: " << endl;
-      cout << " res: " << _res << endl;
-      cout << " lengths: " << _lengths << endl;
-      cout << " center:  " << _center << endl;
-      cout << " dxs:     " << _dxs << endl;
-      cout << " p vertex: " << positiveVertex << " n vertex: " << negativeVertex << endl;
-      cout << " first XYZ: " << firstXYZ << " second XYZ:" << secondXYZ << endl;
+    #pragma omp critical
+      {
+        cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+        cout << " field dims: " << endl;
+        cout << " res: " << _res << endl;
+        cout << " lengths: " << _lengths << endl;
+        cout << " center:  " << _center << endl;
+        cout << " dxs:     " << _dxs << endl;
+        cout << " p vertex: " << positiveVertex << " n vertex: " << negativeVertex << endl;
+        cout << " first XYZ: " << firstXYZ << " second XYZ:" << secondXYZ << endl;
 
-      cout << " positive:           " << positiveValue                                << " negative:           " << negativeValue << endl;
-      //cout << " positive should be: " << field(firstXYZ[0], firstXYZ[1], firstXYZ[2]) << " negative should be: " << field(secondXYZ[0], secondXYZ[1], secondXYZ[2]) << endl;
+        cout << " positive:           " << positiveValue                                << " negative:           " << negativeValue << endl;
 
-      exit(0);
+        exit(0);
+      }
     }
 
     //assert(positiveValue * negativeValue < 0.0);
@@ -1443,7 +1441,8 @@ VEC3F TRIANGLE_MESH::midpointSearch(const VEC3F& positiveVertex, const Real& pos
     return midpointVertex;
   }
 
-  if (recursion >= 100)
+  if (recursion >= 8)
+  //if (recursion >= 100)
   //if (recursion >= 1)
   {
     //cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
