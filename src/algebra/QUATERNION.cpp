@@ -220,7 +220,10 @@ void QUATERNION::write(FILE* file) const
   }
   else
   {
-    double entries[] = {_entries[0], _entries[1], _entries[2], _entries[3]};
+    double entries[] = {(double)_entries[0], 
+                        (double)_entries[1], 
+                        (double)_entries[2], 
+                        (double)_entries[3]};
     fwrite((void*)&entries[0], sizeof(double), 1, file);
     fwrite((void*)&entries[1], sizeof(double), 1, file);
     fwrite((void*)&entries[2], sizeof(double), 1, file);
@@ -291,7 +294,9 @@ QUATERNION QUATERNION::log() const
 // take the power
 // from: http://www.lce.hut.fi/~ssarkka/pub/quat.pdf
 //
-// some care has been taken to optimize this ... 
+// some care has been taken to optimize this
+// hacking this back to always do single precision doesn't 
+// win very much
 //////////////////////////////////////////////////////////////////////
 QUATERNION QUATERNION::pow(const Real& exponent) const
 {

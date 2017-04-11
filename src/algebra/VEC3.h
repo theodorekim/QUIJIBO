@@ -172,6 +172,42 @@ inline std::istream &operator>>(std::istream &in, TVEC3<T>& v)
   { return in >> v[0] >> v[1] >> v[2]; }
 #endif
 
+template<class T>
+inline bool operator==(const TVEC3<T> &u, const TVEC3<T>& v)
+  { 
+    return u[0] == v[0] && u[1] == v[1] && u[2] == v[2]; 
+  };
+template<class T>
+inline bool operator<(const TVEC3<T> &u, const TVEC3<T>& v)
+  {
+#if 0
+    int index0 = u[0] + 50 * u[1] + 50 * 50 * u[2]; 
+    int index1 = v[0] + 50 * v[1] + 50 * 50 * v[2];
+
+    return index0 < index1; 
+#else 
+    if (u[2] < v[2]) 
+      return true;
+    if (u[2] > v[2])
+      return false;
+
+    // must be that u[2] == v[2]
+    if (u[1] < v[1])
+      return true;
+    if (u[1] > v[1])
+      return false;
+
+    // must be that u[1] == v[1]
+    if (u[0] < v[0])
+      return true;
+    if (u[0] > v[0])
+      return false;
+
+    // they must be equal, so u < v is not true
+    return false;
+#endif
+  };
+
 ////////////////////////////////////////////////////////////////////////
 // Misc. function definitions
 ////////////////////////////////////////////////////////////////////////

@@ -276,9 +276,11 @@ private:
 
   // vertex pairs to compute an interpolation point between
   map<pair<int, int>, bool> _vertexPairs;
+  map<pair<VEC3I, VEC3I>, bool> _vertexTriplets;
   
   // where in _vertices is the vertex that corresponds to this pair?
   map<pair<int, int>, int> _vertexPairHash;
+  map<pair<VEC3I, VEC3I >, int> _vertexTripletHash;
 
   // the field being marching cubed
   const FIELD_3D* _toMarch;
@@ -314,10 +316,13 @@ private:
   // add a triangle to the list whose vertices were all precomputed
   // by computeEdgeInterpolations()
   void addVertexPairTriangle(int i, int j, int k, int index);
+  void addVertexTripletTriangle(int i, int j, int k, VEC3I index);
 
   // add a vertex pairs, to be interpolated later
   void addVertexPairs(int i, int j, int k, int index);
+  void addVertexTriplets(int i, int j, int k, VEC3I index);
   pair<int, int> getVertexPair(int i, int index);
+  pair<VEC3I, VEC3I> getVertexTriplets(int i, VEC3I v);
   
   // get the edge point
   VEC3F computeVertex(int i, int index);
@@ -332,11 +337,19 @@ private:
   // compute the non-linear interpolations for matching cubes
   void computeNonlinearEdgeInterpolations();
 
+  // compute the non-linear interpolations for matching cubes
+  void computeNonlinearEdgeInterpolationsHuge();
+
   // compute the quadratic interpolations for matching cubes
   void computeQuadraticEdgeInterpolations();
 
   // compute the non-linear interpolations for matching cubes, but in a memory-stingy way
   void computeNonlinearMarchingCubesLowMemory();
+
+  // compute the non-linear interpolations for matching cubes, but in a memory-stingy way
+  // if the grid is too big, storing the index as a 32-bit int is insufficient,
+  // so need to start storing them as a triple
+  void computeNonlinearMarchingCubesLowMemoryHuge();
 
   // support function for computeNonlinearMarchingCubesLowMemory(), which computes a single
   // slice of the potential function
@@ -344,6 +357,7 @@ private:
 
   // compute all the slices for a low memory marching cubes
   void computeAllLowMemorySlices(vector<pair<int, int> >& flags);
+  void computeAllLowMemorySlicesHuge(vector<pair<int, VEC3I> >& flags);
 
   // compute some coarse normals for each vertex
   void computeNormals();
@@ -351,6 +365,8 @@ private:
   // read/write an edge cache
   bool readEdgeCache(vector<pair<int, int> >& flags);
   void writeEdgeCache(const vector<pair<int, int> >& flags);
+  bool readEdgeCacheHuge(vector<pair<int, VEC3I> >& flags);
+  void writeEdgeCacheHuge(const vector<pair<int, VEC3I> >& flags);
 
   // get the (x,y,z) of an index
   VEC3I getXYZ(const int index) const;

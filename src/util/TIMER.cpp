@@ -135,7 +135,7 @@ void TIMER::printTimings()
     double time = (*backwardIter).first;
 
     name = name + string("                                   ");
-    name = name.substr(0,30);
+    name = name.substr(0,50);
 
     cout << "[" << time / totalTime * 100.0 << "%\t]: "
          << name.c_str() << " " << hours(time) << ":" << minutes(time) << ":" << seconds(time) << "s" << endl;
@@ -192,7 +192,7 @@ void TIMER::printTimingsPerFrame(const int frames)
     string padding("                                   ");
 
     name = name + padding;
-    name = name.substr(0,30);
+    name = name.substr(0,50);
 
     sprintf(buffer, "%f", time / totalTime * 100.0);
     timeString = string(buffer);

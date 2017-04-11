@@ -861,10 +861,55 @@ QUATERNION POLYNOMIAL_4D::evaluateFactoredDouble(const QUATERNION& point) const
 
 //////////////////////////////////////////////////////////////////////
 // use the brute force nested formulation
+//
+// this is where the code spends most of its time.
+// Worthwhile to unroll this? - Doesn't seem to make a difference
 //////////////////////////////////////////////////////////////////////
 QUATERNION POLYNOMIAL_4D::evaluateScaledPowerFactored(const QUATERNION& point) const
+#if 0
 {
-  assert(_roots.size() == _rootPowers.size());
+  const int unroll = 8;
+  QUATERNION result(1,0,0,0);
+  for (int f = 0; f < (_totalRoots / unroll); f++)
+  {
+    int x = f * unroll;
+    const QUATERNION term0 = (point - _roots[x]);
+    const QUATERNION term1 = (point - _roots[x + 1]);
+    const QUATERNION term2 = (point - _roots[x + 2]);
+    const QUATERNION term3 = (point - _roots[x + 3]);
+    const QUATERNION term4 = (point - _roots[x + 4]);
+    const QUATERNION term5 = (point - _roots[x + 5]);
+    const QUATERNION term6 = (point - _roots[x + 6]);
+    const QUATERNION term7 = (point - _roots[x + 7]);
+    
+    const QUATERNION pow0 = term0.pow(_powerScalar * _rootPowers[x]);
+    const QUATERNION pow1 = term1.pow(_powerScalar * _rootPowers[x + 1]);
+    const QUATERNION pow2 = term2.pow(_powerScalar * _rootPowers[x + 2]);
+    const QUATERNION pow3 = term3.pow(_powerScalar * _rootPowers[x + 3]);
+    const QUATERNION pow4 = term4.pow(_powerScalar * _rootPowers[x + 4]);
+    const QUATERNION pow5 = term5.pow(_powerScalar * _rootPowers[x + 5]);
+    const QUATERNION pow6 = term6.pow(_powerScalar * _rootPowers[x + 6]);
+    const QUATERNION pow7 = term7.pow(_powerScalar * _rootPowers[x + 7]);
+
+    result *= pow0 * pow1 * pow2 * pow3 * pow4 * pow5 * pow6 * pow7;
+    //result *= pow0 * pow1 * pow2 * pow3;
+    //result *= pow0;
+    //result *= pow1;
+    //result *= pow2;
+    //result *= pow3;
+  }
+
+  int leftovers = _totalRoots % unroll;
+  for (int x = _totalRoots - leftovers; x < _totalRoots; x++)
+  {
+    QUATERNION term = (point - _roots[x]);
+    result *= term.pow(_powerScalar * _rootPowers[x]);
+  }
+
+  return result;
+}
+#else
+{
   QUATERNION result = point - _roots[0];
   result = result.pow(_powerScalar * _rootPowers[0]);
 
@@ -876,6 +921,7 @@ QUATERNION POLYNOMIAL_4D::evaluateScaledPowerFactored(const QUATERNION& point) c
 
   return result;
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // use the brute force nested formulation

@@ -93,7 +93,8 @@ TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VE
   _escapeRadius = 2000.0;
   _cacheFilename = cacheFilename;
 
-  computeNonlinearMarchingCubesLowMemory();
+  //computeNonlinearMarchingCubesLowMemory();
+  computeNonlinearMarchingCubesLowMemoryHuge();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -276,7 +277,7 @@ void TRIANGLE_MESH::computeNonlinearSlice(const int z, FIELD_2D& field)
    
       Real magnitude = iterate.magnitude();
       int totalIterations = 0;
-      Real magnitudeTrial = 0;
+      //Real magnitudeTrial = 0;
       while (magnitude < escape && totalIterations < _maxIterations) 
       {
         QUATERNION topEval = _top.evaluateScaledPowerFactored(iterate);
@@ -290,7 +291,7 @@ void TRIANGLE_MESH::computeNonlinearSlice(const int z, FIELD_2D& field)
         else
           iterate = topEval;
 
-        magnitudeTrial = iterate.magnitude();
+        //magnitudeTrial = iterate.magnitude();
 
         iterate *= _expScaling;
         magnitude = iterate.magnitude();
@@ -351,6 +352,63 @@ bool TRIANGLE_MESH::readEdgeCache(vector<pair<int, int> >& flags)
 }
 
 //////////////////////////////////////////////////////////////////////
+// try to read in an edge cache
+//////////////////////////////////////////////////////////////////////
+bool TRIANGLE_MESH::readEdgeCacheHuge(vector<pair<int, VEC3I> >& flags)
+{
+  TIMER functionTimer(__FUNCTION__);
+  FILE* file = NULL;
+  file = fopen(_cacheFilename.c_str(), "rb");
+  if (file == NULL)
+  {
+    cout << " No cache file found: " << _cacheFilename.c_str() << " " << endl;
+    return false;
+  }
+  cout << " Cache file found: " << _cacheFilename.c_str() << endl;
+ 
+  // read in: map<pair<int, int>, bool> _vertexPairs;
+  int totalTriplets;
+  fread((void*)&(totalTriplets), sizeof(int), 1, file);
+  cout << " Reading in " << totalTriplets << " triplets " << endl;
+
+  _vertexTriplets.clear();
+  for (int x = 0; x < totalTriplets; x++)
+  {
+    pair<VEC3I, VEC3I> vertexTriplet;
+    VEC3I first;
+    VEC3I second;
+    for (int y = 0; y < 3; y++)
+      fread((void*)&(first[y]), sizeof(int), 1, file);
+    for (int y = 0; y < 3; y++)
+      fread((void*)&(second[y]), sizeof(int), 1, file);
+
+    vertexTriplet.first = first;
+    vertexTriplet.second = second;
+    _vertexTriplets[vertexTriplet] = true;
+  }
+  cout << " Stored " << _vertexTriplets.size() << " triplets" << endl;
+
+  // read in: vector<pair<int, int> > flags
+  int totalFlags;
+  fread((void*)&(totalFlags), sizeof(int), 1, file);
+  cout << " Reading in " << totalFlags << " flags " << endl;
+
+  flags.clear();
+  for (int x = 0; x < totalFlags; x++)
+  {
+    pair<int, VEC3I> flagPair;
+    fread((void*)&(flagPair.first), sizeof(int), 1, file);
+    VEC3I& second = flagPair.second;
+    for (int y = 0; y < 3; y++)
+      fread((void*)&(second[y]), sizeof(int), 1, file);
+    flags.push_back(flagPair);
+  }
+
+  fclose(file);
+  return true;
+}
+
+//////////////////////////////////////////////////////////////////////
 // write out an edge cache
 //////////////////////////////////////////////////////////////////////
 void TRIANGLE_MESH::writeEdgeCache(const vector<pair<int, int> >& flags)
@@ -386,11 +444,67 @@ void TRIANGLE_MESH::writeEdgeCache(const vector<pair<int, int> >& flags)
   // write out: vector<pair<int, int> > flags
   int totalFlags = flags.size(); 
   fwrite((void*)&(totalFlags), sizeof(int), 1, file);
-  for (int x = 0; x < flags.size(); x++)
+  for (unsigned int x = 0; x < flags.size(); x++)
   {
     pair<int, int> flagPair = flags[x];
     fwrite((void*)&(flagPair.first), sizeof(int), 1, file);
     fwrite((void*)&(flagPair.second), sizeof(int), 1, file);
+  }
+
+  fclose(file);
+  cout << " done. " << endl;
+}
+
+//////////////////////////////////////////////////////////////////////
+// write out an edge cache
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::writeEdgeCacheHuge(const vector<pair<int, VEC3I> >& flags)
+{
+  TIMER functionTimer(__FUNCTION__);
+  FILE* file = NULL;
+  file = fopen(_cacheFilename.c_str(), "wb");
+
+  if (file == NULL)
+  {
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    cout << " FAILED TO CACHE OUT EDGES: " << _cacheFilename.c_str() << endl;
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    return;
+  }
+
+  cout << " Writing out cache file " << _cacheFilename.c_str() << " ... " << flush;
+ 
+  // write out: map<pair<int, int>, bool> _vertexPairs;
+  int totalTriplets = _vertexTriplets.size(); 
+  fwrite((void*)&(totalTriplets), sizeof(int), 1, file);
+  cout << " total triplets: " << totalTriplets << " ";
+
+  map<pair<VEC3I, VEC3I>, bool>::iterator iter;
+  for (iter = _vertexTriplets.begin(); iter != _vertexTriplets.end(); iter++)
+  {
+    pair<VEC3I,VEC3I> vertexTriplet = iter->first;
+
+    VEC3I& first  = vertexTriplet.first;
+    VEC3I& second = vertexTriplet.second;
+    for (int x = 0; x < 3; x++)
+      fwrite((void*)&(first[x]), sizeof(int), 1, file);
+    for (int x = 0; x < 3; x++)
+      fwrite((void*)&(second[x]), sizeof(int), 1, file);
+  }
+  
+  // write out: vector<pair<int, int> > flags
+  int totalFlags = flags.size(); 
+  fwrite((void*)&(totalFlags), sizeof(int), 1, file);
+  cout << " total flags: " << totalFlags << " ";
+  for (unsigned int x = 0; x < flags.size(); x++)
+  {
+    pair<int, VEC3I> flagPair = flags[x];
+    fwrite((void*)&(flagPair.first), sizeof(int), 1, file);
+    VEC3I second = flagPair.second;
+    for (int y = 0; y < 3; y++)
+      fwrite((void*)&(second[y]), sizeof(int), 1, file);
   }
 
   fclose(file);
@@ -428,9 +542,11 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
     if (verbose)
       cout << " Low-memory marching cubes ..." << flush;
     computeAllLowMemorySlices(flags);
-    writeEdgeCache(flags);
+    //writeEdgeCache(flags);
   }
   TIMER::printTimings();
+  cout << " Found " << flags.size() << " flags. " << endl;
+  cout << " Found " << _vertexPairs.size() << " vertex pairs. " << endl;
 
   // compute the interpolations along the marching cubes edges
   computeNonlinearEdgeInterpolations();
@@ -452,6 +568,7 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
 
   if (verbose) cout << "computed triangles: " << _triangleVertices.size() << endl;
 	
+  int totalDegenerate = 0;  
   for (unsigned int x = 0; x < _triangleVertices.size() / 3; x++)
   {
     VEC3F* v0 = &_vertices[_triangleVertices[3 * x]];
@@ -464,9 +581,105 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemory()
     Real dist2 = norm((*v1) - (*v2));
     Real eps = 1e-7;
     if (dist0 < eps || dist1 < eps || dist2 < eps)
+    {
+      totalDegenerate++;
       continue;
+    }
     _triangles.push_back(TRIANGLE(v0, v1, v2));
   }
+  cout << " Found " << totalDegenerate << " degenerate triangles " << endl;
+
+  // all done -- throw away the indices
+  _triangleVertices.clear();
+
+  // rebuild the vertex hash
+  _vertexIndices.clear();
+  for (unsigned int x = 0; x < _vertices.size(); x++)
+    _vertexIndices[&(_vertices[x])] = x;
+
+  if (verbose)
+    cout << "done. " << endl;
+}
+
+//////////////////////////////////////////////////////////////////////
+// perform marching cubes
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemoryHuge()
+{
+  bool verbose = true;
+  TIMER functionTimer(__FUNCTION__);
+
+  // clear any previous front
+  _vertices.clear();
+  _triangles.clear();
+  _vertexTripletHash.clear();
+
+  // set "outside" to something a lot bigger than the known grid bounds
+  //_outside = field.center()[0] + field.lengths()[0] * 10000;
+  _outside = _center[0] + _lengths[0] * 10000;
+ 
+  _xRes = _res[0];
+  _yRes = _res[1];
+  _zRes = _res[2];
+  _slabSize = _xRes * _yRes;
+
+  // store all the meaningful flags <flag, index>
+  vector<pair<int, VEC3I> > flags;
+
+  // see if a previous run was cached before computing all the slices
+  if (readEdgeCacheHuge(flags) == false)
+  {
+    if (verbose)
+      cout << " Low-memory marching cubes ..." << flush;
+    computeAllLowMemorySlicesHuge(flags);
+    writeEdgeCacheHuge(flags);
+  }
+  //computeAllLowMemorySlicesHuge(flags);
+  TIMER::printTimings();
+  cout << " Found " << flags.size() << " flags. " << endl;
+  cout << " Found " << _vertexTriplets.size() << " vertex triplets. " << endl;
+
+  // compute the interpolations along the marching cubes edges
+  computeNonlinearEdgeInterpolationsHuge();
+
+  // go back over the vertex pairs and emit the triangles
+  for (unsigned int x = 0; x < flags.size(); x++)
+  {
+    int flag = flags[x].first;
+    VEC3I index = flags[x].second;
+  
+    switch (flag)
+//#include "MARCHING_CUBES_TRIANGLES.include"
+#include "MARCHING_CUBES_TRIANGLES.include.huge"
+  }
+
+  // create the final triangles based on the vertex indices -- this
+  // couldn't be done in the inner loop because the vector keeps
+  // resizing and changing the vertex addresses
+  assert(_triangleVertices.size() % 3 == 0);
+
+  if (verbose) cout << "computed triangles: " << _triangleVertices.size() << endl;
+
+  int totalDegenerate = 0;  
+  for (unsigned int x = 0; x < _triangleVertices.size() / 3; x++)
+  {
+    VEC3F* v0 = &_vertices[_triangleVertices[3 * x]];
+    VEC3F* v1 = &_vertices[_triangleVertices[3 * x + 1]];
+    VEC3F* v2 = &_vertices[_triangleVertices[3 * x + 2]];
+
+    // ignore any degenerate triangles
+    Real dist0 = norm((*v0) - (*v1));
+    Real dist1 = norm((*v0) - (*v2));
+    Real dist2 = norm((*v1) - (*v2));
+    Real eps = 1e-7;
+    if (dist0 < eps || dist1 < eps || dist2 < eps)
+    {
+      totalDegenerate++;
+      continue;
+    }
+    _triangles.push_back(TRIANGLE(v0, v1, v2));
+  }
+  cout << " Found " << totalDegenerate << " degenerate triangles " << endl;
 
   // all done -- throw away the indices
   _triangleVertices.clear();
@@ -1093,6 +1306,22 @@ void TRIANGLE_MESH::computeMarchingCubes(const FIELD_3D& field, const bool verbo
 }
 
 //////////////////////////////////////////////////////////////////////
+// add vertex triplets to be interpolated
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::addVertexTriplets(int i, int j, int k, VEC3I index)
+{
+  pair<VEC3I, VEC3I> toAdd;
+  toAdd = getVertexTriplets(i, index);
+  _vertexTriplets[toAdd] = true;
+
+  toAdd = getVertexTriplets(j, index);
+  _vertexTriplets[toAdd] = true;
+
+  toAdd = getVertexTriplets(k, index);
+  _vertexTriplets[toAdd] = true;
+}
+
+//////////////////////////////////////////////////////////////////////
 // add vertex pairs to be interpolated
 //////////////////////////////////////////////////////////////////////
 void TRIANGLE_MESH::addVertexPairs(int i, int j, int k, int index)
@@ -1174,6 +1403,108 @@ pair<int, int> TRIANGLE_MESH::getVertexPair(int i, int index)
 }
 
 //////////////////////////////////////////////////////////////////////
+// get the indices for the first and second vertices in the
+// interpolation
+//////////////////////////////////////////////////////////////////////
+pair<VEC3I, VEC3I> TRIANGLE_MESH::getVertexTriplets(int i, VEC3I v)
+{
+  //pair<vector<int>, vector<int> > toAdd;
+  pair<VEC3I, VEC3I> toAdd;
+  toAdd.first = v;
+  toAdd.second = v;
+
+  // in general: P = (coord+1), N = (coord)
+	switch (i) {
+	case 1: // (x,y,z) to (x,y+1,z)
+    //toAdd.first += 0;
+    //toAdd.second += _xRes;
+    toAdd.second[1] += 1;
+		break;
+	case 2: // (x,y,z) to (x,y,z+1)
+    //toAdd.first += 0;
+    //toAdd.second += _slabSize;
+    toAdd.second[2] += 1;
+		break;
+	case 3: // (x,y,z+1) to (x,y+1,z+1)
+    //toAdd.first += _slabSize;
+    //toAdd.second += _xRes + _slabSize;
+    toAdd.first[2] += 1;
+    toAdd.second[1] += 1;
+    toAdd.second[2] += 1;
+		break;
+	case 4: // (x,y+1,z) to (x,y+1,z+1)
+    //toAdd.first += _xRes;
+    //toAdd.second += _xRes + _slabSize;
+    toAdd.first[1] += 1;
+    toAdd.second[1] += 1;
+    toAdd.second[2] += 1;
+		break;
+	case 5: // (x+1,y,z) to (x+1,y+1,z)
+    //toAdd.first += 1;
+    //toAdd.second += 1 + _xRes;
+    toAdd.first[0] += 1;
+    toAdd.second[0] += 1;
+    toAdd.second[1] += 1;
+		break;
+	case 6: // (x+1,y,z) to (x+1,y,z+1)
+    //toAdd.first += 1;
+    //toAdd.second += 1 + _slabSize;
+    toAdd.first[0] += 1;
+    toAdd.second[0] += 1;
+    toAdd.second[2] += 1;
+		break;
+	case 7: // (x+1,y,z+1) to (x+1,y+1,z+1)
+    //toAdd.first += 1 + _slabSize;
+    //toAdd.second += 1 + _xRes + _slabSize;
+    toAdd.first[0] += 1;
+    toAdd.first[2] += 1;
+    toAdd.second[0] += 1;
+    toAdd.second[1] += 1;
+    toAdd.second[2] += 1;
+		break;
+	case 8: // (x+1,y+1,z) to (x+1,y+1,z+1)
+    //toAdd.first += 1 + _xRes;
+    //toAdd.second += 1 + _xRes + _slabSize;
+    toAdd.first[0] += 1;
+    toAdd.first[1] += 1;
+    toAdd.second[0] += 1;
+    toAdd.second[1] += 1;
+    toAdd.second[2] += 1;
+		break;
+	case 9: // (x,y+1,z) to (x+1,y+1,z)
+    //toAdd.first += _xRes;
+    //toAdd.second += 1 + _xRes;
+    toAdd.first[1] += 1;
+    toAdd.second[0] += 1;
+    toAdd.second[1] += 1;
+		break;
+	case 10: // (x,y,z) to (x+1,y,z)
+    //toAdd.first += 0;
+    //toAdd.second += 1;
+    toAdd.second[0] += 1;
+		break;
+	case 11: // (x,y,z+1) to (x+1,y,z+1)
+    //toAdd.first += _slabSize;
+    //toAdd.second += 1 + _slabSize;
+    toAdd.first[2] += 1;
+    toAdd.second[0] += 1;
+    toAdd.second[2] += 1;
+		break;
+	case 12: // (x,y+1,z+1) to (x+1,y+1,z+1)
+    //toAdd.first += _xRes + _slabSize;
+    //toAdd.second += 1 + _xRes + _slabSize;
+    toAdd.first[1] += 1;
+    toAdd.first[2] += 1;
+    toAdd.second[0] += 1;
+    toAdd.second[1] += 1;
+    toAdd.second[2] += 1;
+		break;
+	}
+
+  return toAdd;  
+}
+
+//////////////////////////////////////////////////////////////////////
 // get the (x,y,z) of an index
 //////////////////////////////////////////////////////////////////////
 VEC3I TRIANGLE_MESH::getXYZ(const int index) const
@@ -1195,9 +1526,9 @@ Real TRIANGLE_MESH::nonlinearValue(const VEC3F& position, const bool debug)
   QUATERNION iterate(position[0], position[1], position[2], _quaternionSlice);
  
   // TODO: fractal should really be passing this in ...
-  int maxIterations = _maxIterations;
+  const int maxIterations = _maxIterations;
   //Real escape = 20.0;
-  Real escape = _escapeRadius;
+  const Real escape = _escapeRadius;
 
   Real magnitude = iterate.magnitude();
   int totalIterations = 0;
@@ -1309,6 +1640,8 @@ void TRIANGLE_MESH::computeNonlinearEdgeInterpolations()
         cout << " dxs:     " << _dxs << endl;
         cout << " p vertex: " << positiveVertex << " n vertex: " << negativeVertex << endl;
         cout << " first XYZ: " << firstXYZ << " second XYZ:" << secondXYZ << endl;
+        cout << " firstIndex: " << firstIndex << endl;
+        cout << " secondIndex: " << secondIndex << endl;
 
         cout << " positive:           " << positiveValue                                << " negative:           " << negativeValue << endl;
 
@@ -1356,6 +1689,98 @@ void TRIANGLE_MESH::computeNonlinearEdgeInterpolations()
     int secondIndex = vertexPair.second;
     _vertexPairHash[pair<int,int>(firstIndex, secondIndex)] = x;
     _vertexPairHash[pair<int,int>(secondIndex, firstIndex)] = x;
+  }
+  cout << " done. " << endl;
+}
+
+//////////////////////////////////////////////////////////////////////
+// compute the linear interpolations for matching cubes edges
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::computeNonlinearEdgeInterpolationsHuge()
+{
+  TIMER functionTimer(__FUNCTION__);
+  cout << " Computing huge non-linear edge interpolations ... " << flush;
+  map<pair<VEC3I, VEC3I>, bool>::iterator iter;
+ 
+  // flatten the map out to an array now that collision are resolved
+  vector<pair<VEC3I, VEC3I> > pairs;
+  for (iter = _vertexTriplets.begin(); iter != _vertexTriplets.end(); iter++)
+  {
+    pair<VEC3I,VEC3I> vertexPair = iter->first;
+    pairs.push_back(vertexPair);
+  }
+
+  // compute the actual vertices
+  _vertices.clear();
+  _vertices.resize(pairs.size());
+  const int size = pairs.size();
+
+#pragma omp parallel
+#pragma omp for  schedule(dynamic)
+  for (int x = 0; x < size; x++)
+  {
+    pair<VEC3I,VEC3I>& vertexPair = pairs[x];
+
+    VEC3I& firstXYZ = vertexPair.first;
+    VEC3F firstVertex = cellCenter(firstXYZ[0], firstXYZ[1], firstXYZ[2]);
+    Real firstValue = nonlinearValue(firstVertex, false);
+    
+    VEC3I& secondXYZ = vertexPair.second;
+    VEC3F secondVertex = cellCenter(secondXYZ[0], secondXYZ[1], secondXYZ[2]);
+    Real secondValue = nonlinearValue(secondVertex, false);
+
+    VEC3F positiveVertex = firstVertex;
+    Real positiveValue = firstValue;
+    VEC3F negativeVertex = secondVertex;
+    Real negativeValue = secondValue;
+
+    if (positiveValue * negativeValue >= 0.0)
+    {
+    #pragma omp critical
+      {
+        cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+        cout << " field dims: " << endl;
+        cout << " res: " << _res << endl;
+        cout << " lengths: " << _lengths << endl;
+        cout << " center:  " << _center << endl;
+        cout << " dxs:     " << _dxs << endl;
+        cout << " p vertex: " << positiveVertex << " n vertex: " << negativeVertex << endl;
+        cout << " first XYZ: " << firstXYZ << " second XYZ:" << secondXYZ << endl;
+
+        cout << " positive:           " << positiveValue                                << " negative:           " << negativeValue << endl;
+
+        exit(0);
+      }
+    }
+
+    //assert(positiveValue * negativeValue < 0.0);
+
+    if (firstValue < 0)
+    {
+      positiveVertex = secondVertex;
+      positiveValue = secondValue;
+      negativeVertex = firstVertex;
+      negativeValue = firstValue;
+    }
+
+    // this turns the midpoint search on and off. If you want to compare to just traditional
+    // marching cubes with linear interpolation, set this to 0.
+    VEC3F finalVertex = midpointSearch(positiveVertex, positiveValue, negativeVertex, negativeValue);
+    
+    _vertices[x] = finalVertex;
+    if (x % (int)(size / 10) == 0)
+      cout << 100 * ((Real)x / size) << "% " << flush;
+  }
+
+  // hash where each vertex is so the triangle construction looking for it later can find it
+  _vertexTripletHash.clear();
+  for (unsigned int x = 0; x < pairs.size(); x++)
+  {
+    pair<VEC3I,VEC3I> vertexTriplet = pairs[x];
+    VEC3I firstIndex = vertexTriplet.first;
+    VEC3I secondIndex = vertexTriplet.second;
+    _vertexTripletHash[pair<VEC3I,VEC3I>(firstIndex, secondIndex)] = x;
+    _vertexTripletHash[pair<VEC3I,VEC3I>(secondIndex, firstIndex)] = x;
   }
   cout << " done. " << endl;
 }
@@ -1481,29 +1906,18 @@ VEC3F TRIANGLE_MESH::midpointSearch(const VEC3F& positiveVertex, const Real& pos
     return midpointVertex;
   }
 
-  //if (recursion >= 20)
-  if (recursion >= 8)
-  //if (recursion >= 100)
-  //if (recursion >= 1)
+  // this resolves roughly millimeter level details if a grid edge is a meter
+  //if (recursion >= 8)
+  if (recursion >= 6)
   {
-    //cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-    //exit(0);
     return midpointVertex;
   }
 
   Real midpointValue = nonlinearValue(midpointVertex);
   if (fabs(midpointValue) < 1e-8)
   {
-    //cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
-    //cout << " recursions: " << recursion << endl;
-    //exit(0);
     return midpointVertex;
   }
-
-  //cout << endl;
-  //cout << " positive: " << positiveVertex << " value: " << positiveValue << endl;
-  //cout << " negative: " << negativeVertex << " value: " << negativeValue << endl;
-  //cout << " midpoint: " << midpointVertex << " value: " << midpointValue << endl;
 
   if (midpointValue < 0)
     return midpointSearch(positiveVertex, positiveValue,
@@ -1650,6 +2064,25 @@ void TRIANGLE_MESH::addTriangle(int i, int j, int k, int index)
   int v0 = storeVertex(p0, index);
   int v1 = storeVertex(p1, index);
   int v2 = storeVertex(p2, index);
+
+  _triangleVertices.push_back(v0); 
+  _triangleVertices.push_back(v1); 
+  _triangleVertices.push_back(v2); 
+}
+
+//////////////////////////////////////////////////////////////////////
+// add a triangle to the list whose vertices were all precomputed
+// by computeEdgeInterpolations()
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::addVertexTripletTriangle(int i, int j, int k, VEC3I index)
+{
+  pair<VEC3I,VEC3I> vp0 = getVertexTriplets(i, index);
+  pair<VEC3I,VEC3I> vp1 = getVertexTriplets(j, index);
+  pair<VEC3I,VEC3I> vp2 = getVertexTriplets(k, index);
+
+  int v0 = _vertexTripletHash[vp0];
+  int v1 = _vertexTripletHash[vp1];
+  int v2 = _vertexTripletHash[vp2];
 
   _triangleVertices.push_back(v0); 
   _triangleVertices.push_back(v1); 
@@ -1941,14 +2374,20 @@ bool TRIANGLE_MESH::writeOBJ(const string& filename)
 
 	for (unsigned int i = 0; i < _vertices.size(); i++)
   {
-    double vertex[] = {_vertices[i][0], _vertices[i][1], _vertices[i][2]};
+    //double vertex[] = {_vertices[i][0], _vertices[i][1], _vertices[i][2]};
+    double vertex[] = {(double)_vertices[i][0], 
+                       (double)_vertices[i][1], 
+                       (double)_vertices[i][2]};
     fprintf(file, "v %.16f %.16f %.16f\n", vertex[0], vertex[1], vertex[2]);
 		//out << "v " << _vertices[i][0] << " " << _vertices[i][1] << " " << _vertices[i][2] << endl;
   }
 	// normals
 	for (unsigned int i = 0; i < _normals.size(); i++)
   {
-    double normal[] = {_normals[i][0], _normals[i][1], _normals[i][2]};
+    //double normal[] = {_normals[i][0], _normals[i][1], _normals[i][2]};
+    double normal[] = {(double)_normals[i][0], 
+                       (double)_normals[i][1], 
+                       (double)_normals[i][2]};
     fprintf(file, "vn %.16f %.16f %.16f\n", normal[0], normal[1], normal[2]);
   }
 	// faces
@@ -1982,14 +2421,20 @@ bool TRIANGLE_MESH::writeOBJgz(const string& filename)
 
 	for (unsigned int i = 0; i < _vertices.size(); i++)
   {
-    double vertex[] = {_vertices[i][0], _vertices[i][1], _vertices[i][2]};
+    //double vertex[] = {_vertices[i][0], _vertices[i][1], _vertices[i][2]};
+    double vertex[] = {(double)_vertices[i][0], 
+                       (double)_vertices[i][1], 
+                       (double)_vertices[i][2]};
     gzprintf(file, "v %.16f %.16f %.16f\n", vertex[0], vertex[1], vertex[2]);
 		//out << "v " << _vertices[i][0] << " " << _vertices[i][1] << " " << _vertices[i][2] << endl;
   }
 	// normals
 	for (unsigned int i = 0; i < _normals.size(); i++)
   {
-    double normal[] = {_normals[i][0], _normals[i][1], _normals[i][2]};
+    //double normal[] = {_normals[i][0], _normals[i][1], _normals[i][2]};
+    double normal[] = {(double)_normals[i][0], 
+                       (double)_normals[i][1], 
+                       (double)_normals[i][2]};
     gzprintf(file, "vn %.16f %.16f %.16f\n", normal[0], normal[1], normal[2]);
   }
 	// faces
@@ -2095,17 +2540,18 @@ bool TRIANGLE_MESH::readOBJ(const string& filename)
       
       for (int x = 0; x < 3; x++)
       {
-        int totalChars = fscanf(file, "%s", indices); 
+        //int totalChars = fscanf(file, "%s", indices); 
+        fscanf(file, "%s", indices); 
         if (feof(file) || ferror(file)) break;
 
         int vertexIndex = -1;
-        int texcoordIndex = -1;
-        int normalIndex = -1;
+        //int texcoordIndex = -1;
+        //int normalIndex = -1;
         char* texcoordExists = strchr(indices, '/');
-        char* normalExists   = strrchr(indices, '/');
+        //char* normalExists   = strrchr(indices, '/');
 
         int vertexEnd = texcoordExists - indices;
-        int texcoordEnd = normalExists - indices;
+        //int texcoordEnd = normalExists - indices;
 
         // extract the vertex index
         if (texcoordExists == NULL)
@@ -2123,6 +2569,7 @@ bool TRIANGLE_MESH::readOBJ(const string& filename)
           vertexIndex = atoi(vertexString);
         }
 
+        /*
         // extract the texture index
         if (texcoordExists)
         {
@@ -2156,6 +2603,7 @@ bool TRIANGLE_MESH::readOBJ(const string& filename)
             // convert it to an int
             normalIndex = atoi(normalString);
           }
+          */
 
         // subtract one and store
         f.vertex(x) = &_vertices[vertexIndex - 1];
@@ -3780,7 +4228,10 @@ bool TRIANGLE_MESH::writePlyPointCloud(const string& filename)
 
   for (int x = 0; x < totalVertices; x++)
   {
-    float vertex[] = {_vertices[x][0], _vertices[x][1], _vertices[x][2]};
+    //float vertex[] = {_vertices[x][0], _vertices[x][1], _vertices[x][2]};
+    float vertex[] = {(float)_vertices[x][0], 
+                      (float)_vertices[x][1], 
+                      (float)_vertices[x][2]};
     fwrite((void*)&(vertex[0]), sizeof(float), 1, file);
     fwrite((void*)&(vertex[1]), sizeof(float), 1, file);
     fwrite((void*)&(vertex[2]), sizeof(float), 1, file);
@@ -3847,8 +4298,14 @@ bool TRIANGLE_MESH::writePlyOrientedPointCloud(const string& filename)
 
   for (int x = 0; x < totalVertices; x++)
   {
-    float vertex[] = {_vertices[x][0], _vertices[x][1], _vertices[x][2]};
-    float normal[] = {_normals[x][0], _normals[x][1], _normals[x][2]};
+    //float vertex[] = {_vertices[x][0], _vertices[x][1], _vertices[x][2]};
+    float vertex[] = {(float)_vertices[x][0], 
+                      (float)_vertices[x][1], 
+                      (float)_vertices[x][2]};
+    //float normal[] = {_normals[x][0], _normals[x][1], _normals[x][2]};
+    float normal[] = {(float)_normals[x][0],
+                      (float)_normals[x][1], 
+                      (float)_normals[x][2]};
     fwrite((void*)&(vertex[0]), sizeof(float), 1, file);
     fwrite((void*)&(vertex[1]), sizeof(float), 1, file);
     fwrite((void*)&(vertex[2]), sizeof(float), 1, file);
@@ -4013,6 +4470,75 @@ void TRIANGLE_MESH::computeAllLowMemorySlices(vector<pair<int, int> >& flags)
         // three vertices are added to _vertexPairs here  
         switch (flag)
 #include "MARCHING_CUBES_VERTICES.include" 
+      }
+    if (z % (int)(_zRes / 10) == 0)
+      cout << 100 * ((Real)z / _zRes) << "% " << flush;
+  }
+  cout << " done." << endl;
+  cout << " infs: " << totalInfs << endl;
+  cout << " NaNs: " << totalNans << endl;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// compute all the slices for a low memory marching cubes
+////////////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::computeAllLowMemorySlicesHuge(vector<pair<int, VEC3I> >& flags)
+{
+  TIMER functionTimer(__FUNCTION__);
+
+  // number of nans and infs
+  int totalNans = 0;
+  int totalInfs = 0;
+
+  FIELD_2D& slab0 = _slab0;
+  FIELD_2D& slab1 = _slab1;
+  computeNonlinearSlice(0, slab1);
+  totalNans += slab1.totalNans();
+  totalInfs += slab1.totalInfs();
+
+  // build all the vertex pairs 
+  _vertexTriplets.clear();
+  for (int z = 0; z < _zRes - 1; z++)
+  {
+    // swap in the old "next" slice as the new current ont
+    FIELD_2D& old = slab0;
+    slab0 = slab1;
+    slab1 = old;
+
+    // compute the next needed slice on the fly
+    computeNonlinearSlice(z + 1, slab1);
+    totalNans += slab1.totalNans();
+    totalInfs += slab1.totalInfs();
+
+    for (int y = 0; y < _yRes - 1; y++)
+      for (int x = 0; x < _xRes - 1; x++) 
+      {
+        //int index = x + y * _xRes + z * _slabSize;
+        VEC3I index(x,y,z);
+
+        CUBE cube;
+        cube.NNN = slab0(x,y);
+        cube.NNP = slab1(x,y);
+        cube.NPN = slab0(x,y + 1);
+        cube.NPP = slab1(x,y + 1);
+        cube.PNN = slab0(x + 1,y);
+        cube.PNP = slab1(x + 1,y);
+        cube.PPN = slab0(x + 1,y + 1);
+        cube.PPP = slab1(x + 1,y + 1);
+		
+        // construct the flag
+        int flag =    ((cube.NNN > 0) + 2 *   (cube.NNP > 0) + 4  * (cube.NPN > 0) +
+                   8 * (cube.NPP > 0) + 16 *  (cube.PNN > 0) + 32 * (cube.PNP > 0) +
+                   64 *(cube.PPN > 0) + 128 * (cube.PPP > 0));
+
+        if (flag == 0 || flag == 255) continue;
+
+        flags.push_back(pair<int, VEC3I>(flag, index));
+		
+        // three vertices are added to _vertexPairs here  
+        switch (flag)
+//#include "MARCHING_CUBES_VERTICES.include" 
+#include "MARCHING_CUBES_VERTICES.include.huge" 
       }
     if (z % (int)(_zRes / 10) == 0)
       cout << 100 * ((Real)z / _zRes) << "% " << flush;
