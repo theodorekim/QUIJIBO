@@ -303,12 +303,12 @@ QUATERNION QUATERNION::pow(const Real& exponent) const
   const Real partial = _x * _x + _y * _y + _z * _z;
   const Real qMagnitude = sqrt(partial + _w * _w);
   const Real vMagnitude = sqrt(partial);
-  const Real vMagnitudeInv = (vMagnitude > 0) ? 1.0 / vMagnitude : 0;
+  const Real vMagnitudeInv = (vMagnitude > 0.0) ? 1.0 / vMagnitude : 0.0;
 
   const Real scale = exponent * acos(_w / qMagnitude) * vMagnitudeInv;
 
   const Real magnitude = scale * vMagnitude;
-  const Real magnitudeInv = (magnitude > 0) ? 1.0 / magnitude : 0;
+  const Real magnitudeInv = (magnitude > 0.0) ? 1.0 / magnitude : 0.0;
   const Real exps = std::exp(exponent * std::log(qMagnitude));
 
   const Real scale2 = scale * exps * magnitudeInv * sin(magnitude);

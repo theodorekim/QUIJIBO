@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<scene version="0.5.0">
+  <integrator type="direct">
+    <integer name="emitterSamples" value="4"/>
+    <integer name="bsdfSamples" value="4"/>
+  </integrator>
+
+  <sensor type="perspective">
+    <string name="fovAxis" value="smaller"/>
+    <float name="nearClip" value="0.01"/>
+    <float name="farClip" value="10"/>
+    <float name="focusDistance" value="1000"/>
+		<transform name="toWorld">
+      <!--
+      <lookat target = "0.638175,0.437008, 0.701329" origin = "1.04382, 0.0571702, 1.5327" up = "-0.131984, -0.924374, -0.357931"/>
+      <lookat target = "0.671559,0.381224, 0.833084" origin = "1.07498, 0.00130071, 1.66549" up = "-0.131984, -0.924373, -0.357931"/>
+      -->
+      <lookat target = "0.681017,0.344339, 0.841651" origin = "1.06275, -0.147389, 1.62427" up = "-0.180728, -0.870101, -0.458544"/>
+    </transform>
+		<float name="fov" value="45"/>
+
+		<sampler type="ldsampler">
+			<integer name="sampleCount" value="64"/>
+		</sampler>
+
+    <film type="hdrfilm" id="film">
+      <!--
+      <integer name="width" value="320"/>
+      <integer name="height" value="240"/>
+      
+      <integer name="width" value="640"/>
+      <integer name="height" value="480"/>
+      
+      <integer name="width" value="1280"/>
+      <integer name="height" value="960"/>
+      
+      <integer name="width" value="2560"/>
+      <integer name="height" value="1920"/>
+      -->
+      <integer name="width" value="2560"/>
+      <integer name="height" value="1920"/>
+    </film>
+	</sensor>
+
+    <!--
+  <shape type="obj">
+    <string name="filename" value="../bunny_7000.res.1000.iterations.2.obj"/>
+    -->
+    <shape type="serialized">
+      <!--
+      <string name="filename" value="../meshes/bunny_50.serialized"/>
+      <string name="filename" value="../meshes/bunny_1000.serialized"/>
+      <string name="filename" value="../meshes/bunny_2200.serialized"/>
+      -->
+      <string name="filename" value="../meshes/bunny_2200.serialized"/>
+
+    <!-- NOTE: transforms are NOT in reverse order in Mitsuba!" -->
+    <transform name="toWorld">
+      <!--<rotate z="1" angle= "$angle"/>-->
+      <translate x="0" y="0" z="-1.41"/>
+      <translate x="-0.1" y="-0.8" z="0.3"/>
+      <rotate y="1" angle="-175"/>
+      <rotate x="1" angle="-89"/>
+      <scale x="0.25" y="0.25" z="0.25"/>
+      <translate x="0.5" y="0.5" z="0.5"/>
+    </transform>
+
+    <bsdf type="roughplastic">
+      <string name="distribution" value="beckmann"/>
+      <float name="intIOR" value="1.61"/>
+      <srgb name="diffuseReflectance" value= "0.81 0.74 0.7"/>
+      <float name="alpha" value="0.1"/>
+      <boolean name="nonlinear" value="true"/>
+    </bsdf>
+
+  </shape>
+
+	<emitter type="envmap" id="Area_002-light">
+    <string name="filename" value="envmap.exr"/>
+    <transform name="toWorld">
+      <!-- "adds a little shadow to the right" -->
+			<rotate y="1" angle="-35"/>
+      <!-- "Sitting on the page, directly above" -->
+			<rotate x="1" angle="180"/>
+			<rotate y="1" angle="90"/>
+    </transform>
+    <float name="scale" value="2"/>
+	</emitter>
+
+  <shape type="rectangle">
+    <bsdf type="diffuse">
+		  <rgb name="reflectance" value="0.9 0.9 0.9"/>
+    </bsdf>
+    <transform name="toWorld">
+      <rotate x="1" angle="34"/>
+      <rotate y="1" angle="0"/>
+      <rotate z="1" angle="0"/>
+      <!--<scale x="1.4" y="1.6" z="1"/>-->
+      <scale x="2" y="2" z="1"/>
+      <translate x="0.3" y="0.3" z="0.2"/>
+    </transform>
+  </shape>
+</scene>
