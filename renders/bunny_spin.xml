@@ -52,8 +52,11 @@
       <string name="filename" value="../meshes/bunny_50.serialized"/>
       <string name="filename" value="../meshes/bunny_1000.serialized"/>
       <string name="filename" value="../meshes/bunny_2200.serialized"/>
-      -->
       <string name="filename" value="../meshes/bunny_2200.serialized"/>
+      <string name="filename" value="../meshes/bunny_1250/iterations_4.serialized"/>
+      <string name="filename" value="../meshes/bunny_1500/iterations_4.serialized"/>
+      -->
+      <string name="filename" value="../meshes/bunny_1750/iterations_4.serialized"/>
 
     <!-- NOTE: transforms are NOT in reverse order in Mitsuba!" -->
     <transform name="toWorld">

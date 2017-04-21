@@ -111,6 +111,7 @@ bool OBJ::LoadPBRT(string& filename)
 //////////////////////////////////////////////////////////////////////
 bool OBJ::Load(const string& fileName, double scale)
 {
+  TIMER functionTimer(__FUNCTION__);
 	// clear anything that existed before
 	vertices.resize (0);
 	normals.resize (0);
@@ -305,6 +306,298 @@ Fail:
 }
 
 //////////////////////////////////////////////////////////////////////
+// read an obj file
+//////////////////////////////////////////////////////////////////////
+bool OBJ::LoadConservative(const string& filename)
+{
+	// open up file
+  TIMER countingTimer("Counting");
+  cout << " Counting ... " << flush;
+	ifstream inCount(filename.c_str ());
+	if (inCount.fail()) 
+  {
+		cerr << "Can't read input file " << filename << endl;
+		return false;
+	}
+
+  int vertexCount = 0;
+  int groupCount = 0;
+  int materialCount = 0;
+  int normalCount = 0;
+  int faceCount = 0;
+	string type("");
+	while (true)
+  {
+		if (inCount.eof()) break;
+
+		string line("");
+		getline(inCount, line);
+
+		if (inCount.eof()) break;
+		if (inCount.fail())
+		{
+			cerr << "Error reading" << endl;
+      exit(1);
+		}
+
+		// get the type of command (v, vt, vn, or f supported)
+		istringstream is(line);
+		is >> type;
+		if (is.eof() || is.fail()) continue;
+
+		// reading vertices
+		if (type == "v")
+    {
+      if (vertexCount == 0)
+        cout << " vertices ... " << flush;
+      vertexCount++;
+    }
+		if (type == "g")
+      groupCount++;
+    if (type == "usemtl")
+      materialCount++;
+		if (type == "vn")
+    {
+      if (normalCount == 0)
+        cout << " normals ... " << flush;
+      normalCount++;
+    }
+		else if (type == "f")
+    {
+      if (faceCount == 0)
+        cout << " faces ... " << flush;
+      faceCount++;
+    }
+	}
+  inCount.close();
+  cout << " done. " << endl;
+  cout << " Found: " << endl;
+  cout << "\t" << vertexCount   << " vertices " << endl;
+  cout << "\t" << groupCount    << " groups" << endl;
+  cout << "\t" << materialCount << " materials" << endl;
+  cout << "\t" << normalCount   << " normals" << endl;
+  cout << "\t" << faceCount     << " faces" << endl;
+  countingTimer.stop();
+  TIMER::printTimings();
+
+	// clear anything that existed before
+  TIMER resizeTimer("Resizing");
+  cout << " Resizing ... " << flush;
+	vertices.resize(vertexCount);
+	normals.resize(normalCount);
+	faces.resize(faceCount);
+  for (int x = 0; x < faceCount; x++)
+    faces[x].vertices.resize(3);
+  cout << " done." << endl;
+  float vertexBytes = (vertexCount * 3 * 64) / 8;
+  float faceBytes = (faceCount * 3 * 32) / 8;
+  cout << " Vertices should take up " << vertexBytes / pow(2.0, 20.0) << " MB" << endl; 
+  cout << " Faces should take up " << faceBytes / pow(2.0, 20.0) << " MB" << endl; 
+  resizeTimer.stop();
+  TIMER::printTimings();
+
+	// open up file
+  TIMER loadingTimer("Loading");
+  cout << " Loading into memory ... " << flush;
+	ifstream in (filename.c_str ());
+	if (in.fail()) 
+	{
+		cerr << "Can't read input file " << filename << endl;
+		return false;
+	}
+
+	// read through line by line
+	int lineNumber = 0;
+  int vertexIndex = 0;
+  int faceIndex = 0;
+	while (true)
+	{
+		if (in.eof () ) break;
+
+		string line("");
+		lineNumber++;
+		getline(in, line);
+
+		if (in.eof() ) break;
+		if (in.fail() )
+		{
+			cerr << "Error reading" << endl;
+      exit(1);
+		}
+
+		// get the type of command (v, vt, vn, or f supported)
+		istringstream is(line);
+		is >> type;
+		if (is.eof () || is.fail () ) continue;
+
+		// reading vertices
+		if (type == "v")
+		{
+			VEC3 v;
+			is >> v;
+
+			vertices[vertexIndex] = v;
+      if (vertexIndex == 0)
+        cout << "vertices ... " << flush;
+      vertexIndex++;
+      if (vertexIndex % 1000000 == 0)
+        cout << " " << vertexIndex << flush;
+		}
+		if (type == "g")
+		{
+      _vertexGroupStarts.push_back(vertices.size());
+      _faceGroupStarts.push_back(faces.size());
+      string name("");
+      is >> name;
+
+      _groupNames.push_back(name);
+    }
+
+    if (type == "usemtl")
+    {
+      _materialStarts.push_back(faces.size());
+      cout << "material line: " << line << endl;
+    }
+
+		// vertex normals
+		if (type == "vn")
+		{
+			VEC3 vn;
+			is >> vn;
+			normals.push_back (vn);
+		}
+
+		// reading faces
+		else if (type == "f")
+		{
+      cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+			Face f;
+      int faceID = 0;
+			while (is.eof () == false)
+			{
+				// read vertex index, texture index, and normal index as v/t/n
+				string indexString("");
+				is >> indexString;
+
+				// sometimes there will be whitespace after lines, so we'll need
+				// to read all the way past the last entry to get an eof, which
+				// will result in a fail here
+				if (is.fail () ) 
+				{
+					continue;
+				}
+
+				// read the indices of vertex/texcoord/normal
+				int indicesIndex = 0;
+				int indices[] = {0, 0, 0};
+				int sign[] = {1, 1, 1};
+				for (unsigned int k = 0; k < indexString.size (); k++)
+				{
+					char c = indexString[k];
+					if (c == '\0') 
+					{
+						break;
+					}
+					else if (c == '/') 
+					{
+						if (indicesIndex == 2)
+						{
+							cerr << "Malformed face at line " << lineNumber << endl;
+							goto Fail;
+						}
+						indicesIndex++;
+					}
+					else if (c >= '0' && c <= '9')
+					{
+						indices[indicesIndex] *= 10;
+						indices[indicesIndex] += c - '0';
+					}
+					else if (c == '-' && indices[indicesIndex] == 0)
+					{
+						sign[indicesIndex] *= -1;
+					}
+					else 
+					{
+						cerr << "Malformed face at line " << lineNumber << endl;
+						goto Fail;
+					}
+				}
+
+				// handle offset-relative indices
+				if (sign[0] == -1) indices[0] = vertices.size ()  + 1 - indices[0];
+				if (sign[2] == -1) indices[2] = normals.size ()   + 1 - indices[2];
+
+				// verify that indices given are sane
+				if (indices[0] < 1 || indices[0] > (int)vertices.size () )
+				{
+					cerr << "Invalid vertex index at line " << lineNumber << endl;
+					goto Fail;
+				}
+				if (indices[2] < 0 || indices[2] > (int)normals.size () )
+				{
+					cerr << "Invalid normal index at line " << lineNumber << endl;
+					goto Fail;
+				}
+
+				// subtract one and store
+				f.vertices[faceID] = (indices[0] - 1);
+        faceID++;
+			}
+
+		  // store the quad
+		  //faces.push_back (f);
+		  faces[faceIndex] = f;
+      if (faceIndex == 0)
+        cout << "faces ... " << flush;
+      faceIndex++;
+		}
+		if (in.fail () ) 
+		{
+			cerr << "Failure reading model at line " << lineNumber << endl;
+			goto Fail;
+		}
+	}
+  cout << " done." << endl;
+  /*
+  _vertexGroupStarts.push_back(vertices.size());
+  _faceGroupStarts.push_back(faces.size());
+
+	in.close ();
+  cout << filename.c_str() << " successfully loaded" << endl;
+  cout << vertices.size() << " total vertices " << endl;
+  cout << faces.size() << " total faces " << endl;
+
+  // cache the triangle and edge lengths
+  _triangleAreas.clear();
+  _maxEdgeLengths.clear();
+  for (unsigned int x = 0; x < faces.size(); x++)
+  {
+    VEC3F* triangleVertices[3];
+    for (int y = 0; y < 3; y++)
+      triangleVertices[y] = &vertices[faces[x].vertices[y]];
+
+    TRIANGLE triangle(triangleVertices[0], triangleVertices[1], triangleVertices[2]);
+    double area = triangle.area();
+    double maxLength = triangle.maxEdgeLength();
+
+    _triangleAreas.push_back(area);
+    _maxEdgeLengths.push_back(maxLength);
+  }
+  _filteringThreshold = 3.0;
+  */
+
+  loadingTimer.stop();
+  TIMER::printTimings();
+	return true;
+
+Fail:
+	in.close ();
+	vertices.resize (0);
+	normals.resize (0);
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////
 // Save an OBJ
 //////////////////////////////////////////////////////////////////////
 bool OBJ::SaveFiltered(vector<int>& filteredFaces, const string& fileName)
@@ -353,7 +646,7 @@ bool OBJ::SaveFiltered(vector<int>& filteredFaces, const string& fileName)
 //////////////////////////////////////////////////////////////////////
 // Save an OBJ
 //////////////////////////////////////////////////////////////////////
-bool OBJ::Save (const string& fileName)
+bool OBJ::Save(const string& fileName)
 {
 	// try to open out stream
 	ofstream  out (fileName.c_str () );
@@ -391,6 +684,67 @@ bool OBJ::Save (const string& fileName)
 		return false;
 	}
 	out.close ();
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Save an OBJ
+//////////////////////////////////////////////////////////////////////
+bool OBJ::SavePieces(const string& filename, const int pieces)
+{
+  // strip off the "*.obj"
+  string prefix = filename.substr(0, filename.length() - 4);
+  cout << " Filename received: " << filename.c_str() << endl;
+  cout << " Using prefix: " << prefix.c_str() << endl;
+
+  // output the pieces
+  for (int x = 0; x < pieces; x++)
+  {
+    char buffer[256];
+    sprintf(buffer, "%04i", x);
+    string piecename = prefix + string("_") + string(buffer) + string(".obj"); 
+    cout << " Writing out " << piecename.c_str() << endl;
+
+    // try to open out stream
+    ofstream out(piecename.c_str());
+    if (out.fail())
+    {
+      cerr << "Failed to open " << piecename.c_str() << " to save OBJ" << endl;
+      return false;
+    }
+    // spew vertices
+    for (unsigned int i = 0; i < vertices.size (); i++)
+    {
+      out << "v " << vertices[i][0] << " " << vertices[i][1] << " " << vertices[i][2] << endl;
+    }
+
+    int interval = faces.size() / pieces;
+    int faceStart = x * interval;
+    int faceEnd = (x + 1) * interval;
+    if (faceEnd > faces.size()) 
+      faceEnd = faces.size();
+
+    // faces
+    //for (unsigned int i = 0; i < faces.size(); i++)
+    for (unsigned int i = faceStart; i < faceEnd; i++)
+    {
+      out << "f ";
+      for (unsigned int j = 0; j < faces[i].vertices.size (); j++)
+      {
+        out << faces[i].vertices[j] + 1;
+        out << " ";
+
+      }
+      out << endl;
+    }
+    // perfunctory error checking
+    if (out.fail () )
+    {
+      cerr << "There was an error writing " << piecename.c_str() << endl;
+      return false;
+    }
+    out.close ();
+  }
 	return true;
 }
 

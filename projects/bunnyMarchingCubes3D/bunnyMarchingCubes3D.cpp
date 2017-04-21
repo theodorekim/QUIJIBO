@@ -695,17 +695,26 @@ int main(int argc, char* argv[])
   cout << " New center: " << centerNew << endl;
   cout << " New lengths: " << lengthsNew << endl;
 
+  bool recenter = parser.getBool("recenter", false);
+
   // need to translate the center by the root translation
-  //centerNew -= rootTranslation;
+  if (recenter)
+  {
+    cout << " Recentering " << centerNew << " to ";
+    centerNew -= rootTranslation;
+    cout << centerNew << endl;
+  }
+  else
+    cout << " Not recentering" << endl;
 
   center = centerNew;
   lengths = lengthsNew;
 
-#if !USING_LOWMEMORY
+//#if !USING_LOWMEMORY
   cout << " Allocating initial fields ... " << flush;
   optimize3D.fractal() = FIELD_3D(res,res,res, center, lengths);
   cout << " done. " << endl;
-#endif
+//#endif
 
   cout << " Rendering root Z translations " << endl;
   marchTranslations(rootTranslation, "translationz");

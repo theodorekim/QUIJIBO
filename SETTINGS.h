@@ -14,8 +14,8 @@
 // (uncomment one)
 ////////////////////////////////////////////////////////////////////////////////
 //#define USING_SINGLE_EIGEN 1
-#define USING_DOUBLE_EIGEN 1
-//#define USING_EXTENDED_EIGEN 1
+//#define USING_DOUBLE_EIGEN 1
+#define USING_EXTENDED_EIGEN 1
 
 ////////////////////////////////////////////////////////////////////////////////
 // You should not need to touch anything below here, at least to get started.

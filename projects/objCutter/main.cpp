@@ -294,23 +294,20 @@ int glvuWindow()
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
-  if (argc != 2)
+  if (argc != 3)
   {
-    cout << " Usage: " << argv[0] << " <OBJ filename> " << endl;
+    cout << " USAGE: " << argv[0] << " <OBJ filename> <number of pieces to cut into>" << endl;
     return 0;
   }
 
-  //objFile.Load("./meshes/bunny_small_zoom_0.res.50.iterations.3_translationz.obj");
-  //objFile.Load("./meshes/bunny_zoom_0.res.1100.iterations.3.obj");
+  cout << "Loading " << argv[1] << " ... " << flush;
   objFile.Load(argv[1]);
-  objFile.ComputeVertexNormals();
+  cout << " Done. " << endl;
 
-  center = VEC3(0,0,0);
-  //center = VEC3(0,0,1.41);
-  lengths = VEC3(3.06186, 3.06186, 3.06186);
-  box = BOX(center, lengths);  
+  // cut the mesh into 10 pieces
+  int pieces = atoi(argv[2]);
+  cout << "Cutting " << argv[1] << " into " << pieces << " pieces " << endl;
+  objFile.SavePieces(argv[1], pieces);
 
-  glutInit(&argc, argv);
-  glvuWindow();
   return 0;
 }

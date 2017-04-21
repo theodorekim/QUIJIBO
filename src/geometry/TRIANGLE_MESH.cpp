@@ -1701,7 +1701,9 @@ void TRIANGLE_MESH::computeNonlinearEdgeInterpolationsHuge()
   TIMER functionTimer(__FUNCTION__);
   cout << " Computing huge non-linear edge interpolations ... " << flush;
   map<pair<VEC3I, VEC3I>, bool>::iterator iter;
- 
+
+  cout << " center: " << _center << flush;
+
   // flatten the map out to an array now that collision are resolved
   vector<pair<VEC3I, VEC3I> > pairs;
   for (iter = _vertexTriplets.begin(); iter != _vertexTriplets.end(); iter++)
@@ -1899,9 +1901,15 @@ VEC3F TRIANGLE_MESH::midpointSearch(const VEC3F& positiveVertex, const Real& pos
   midpointVertex *= 0.5;
   if (positiveValue * negativeValue >= 0.0)
   {
-    cout << " positive: " << positiveValue << " negative: " << negativeValue << endl;
-    cout << " p vertex: " << positiveVertex << " n vertex: " << negativeVertex << endl;
-    cout << " recursion: " << recursion << endl;
+    // if this gets tripped, and you're using floats or doubles,
+    // you may need to bump up the precision of your representation
+#pragma omp critical
+    {
+      cout << " positive: " << positiveValue << " negative: " << negativeValue << endl;
+      cout << " p vertex: " << positiveVertex << " n vertex: " << negativeVertex << endl;
+      cout << " recursion: " << recursion << endl;
+      exit(0);
+    }
 
     return midpointVertex;
   }

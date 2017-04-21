@@ -92,12 +92,16 @@ public:
 
 	// return true if succeeded to read obj from fileName
 	bool Load(const std::string& fileName, double scale = 1.0);
+	bool LoadConservative(const std::string& filename);
 
 	// return true if succeeded to write obj to fileName
 	bool Save(const std::string& fileName);
 
 	// return true if succeeded to write obj to fileName
 	bool SaveFiltered(vector<int>& filteredFaces, const std::string& fileName);
+	
+  // return true if succeeded to write obj pieces to filename
+	bool SavePieces(const std::string& filename, const int pieces);
 
 	// return the max/min coordinates of a bounding box around the object
 	void BoundingBox (VEC3& minPosition, VEC3& maxPosition);
