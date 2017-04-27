@@ -72,6 +72,18 @@ VEC3 lengths;
 //BOX box;
 FIELD_3D box;
 
+GLuint objDisplayList = 0;
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+void buildObjDisplayList()
+{
+  objDisplayList = glGenLists(1);
+  glNewList(objDisplayList, GL_COMPILE);
+    objFile.draw();
+  glEndList();
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // print which mode we're currently in
 //////////////////////////////////////////////////////////////////////////////
@@ -171,7 +183,11 @@ void userDisplayFunc()
     glPopMatrix();
 
     glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
-    objFile.draw();
+    if (objDisplayList == 0)
+      buildObjDisplayList();
+    else
+      glCallList(objDisplayList);
+    //objFile.draw();
 
     // draw a box outline
     glColor4f(1.0f, 1.0f, 1.0f, 10.0f);
