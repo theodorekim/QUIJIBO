@@ -4,21 +4,36 @@
   <integrator type="direct">
     <integer name="emitterSamples" value="4"/>
     <integer name="bsdfSamples" value="4"/>
+    <boolean name="hideEmitters" value="true"/>
   </integrator>
 
   <sensor type="perspective">
-    <string name="fovAxis" value="smaller"/>
-    <float name="nearClip" value="0.01"/>
-    <float name="farClip" value="10"/>
-    <float name="focusDistance" value="1000"/>
+    <!--<string name="fovAxis" value="smaller"/>-->
 		<transform name="toWorld">
       <!--
       <lookat target = "0.638175,0.437008, 0.701329" origin = "1.04382, 0.0571702, 1.5327" up = "-0.131984, -0.924374, -0.357931"/>
       <lookat target = "0.671559,0.381224, 0.833084" origin = "1.07498, 0.00130071, 1.66549" up = "-0.131984, -0.924373, -0.357931"/>
-      -->
       <lookat target = "0.681017,0.344339, 0.841651" origin = "1.06275, -0.147389, 1.62427" up = "-0.180728, -0.870101, -0.458544"/>
+      <lookat target = "0.204498,-0.0502375,0.79068" origin = "1.02965,0.247607,0.31065" up = "-0.382829, -0.330058,-0.86285"/>
+      <lookat target = "0.181573,0.136956,0.814712" origin = "1.0611,0.144932,0.338933" up = "-0.445088, -0.339855,-0.828491"/>
+      <lookat target = "0.0329559,0.23162,0.731513" origin = "0.975366,0.0865425,0.430146" up = "-0.0605996, -0.960187,0.272722"/>
+      <lookat target = "0.0329559,0.23162,0.731513" origin = "0.975366,0.0865425,0.430146" up = "-0.0605996, -0.960187,0.272722"/>
+      <lookat target = "-0.0891528,-0.118941,0.679945" origin = "0.848018,0.105181,0.412587" up = "-0.0267212, 0.810215,0.585525"/>
+      <lookat target = "-0.183826,0.112008,0.401492" origin = "0.81415,0.0598335,0.437854" up = "0.0253124, 0.850417,0.525507"/>
+      <lookat target = "-0.182831,0.14164,0.384518" origin = "0.812575,0.0628966,0.438994" up = "0.0384158, 0.849569,0.52608"/>
+      <lookat target = "-0.172883,0.134347,0.299562" origin = "0.813228,0.0595705,0.44787" up = "-0.0133423, 0.854376,0.519485"/>
+      <lookat target = "-0.169682,0.0841841,0.275947" origin = "0.815484,0.0647258,0.446445" up = "-0.0716962, 0.856009,0.511966"/>
+      <lookat target = "-0.172404,-0.0325128,0.334135" origin = "0.816965,0.0688915,0.438378" up = "-0.14009, 0.856965,0.495971"/>
+      <lookat target = "-0.102349,0.00123858,0.776606" origin = "0.819703,0.0661519,0.39502" up = "0.140805, 0.862045,0.486882"/>
+      <lookat target = "-0.120662,0.0558909,0.709244" origin = "0.830368,0.0599492,0.400172" up = "0.153079, 0.862497,0.482356"/>
+      -->
+      <lookat target = "-0.124628,0.0621849,0.699249" origin = "0.828353,0.0625171,0.39622" up = "0.153079, 0.862496,0.482355"/>
     </transform>
 		<float name="fov" value="45"/>
+    <string name="fovAxis" value="y"/>
+    <float name="nearClip" value="0.001"/>
+    <float name="farClip" value="10"/>
+    <float name="focusDistance" value="1000"/>
 
 		<sampler type="ldsampler">
 			<integer name="sampleCount" value="64"/>
@@ -56,8 +71,14 @@
       <string name="filename" value="../meshes/bunny_1250/iterations_4.serialized"/>
       <string name="filename" value="../meshes/bunny_1500/iterations_4.serialized"/>
       <string name="filename" value="../meshes/bunny_1750/iterations_4.serialized"/>
+      <string name="filename" value="../meshes/bunny_1000/zoom_1_iterations_4.serialized"/>
+      <string name="filename" value="../meshes/bunny_1500/zoom_1_iterations_4.serialized"/>
+      <string name="filename" value="../meshes/bunny_2000/zoom_1_iterations_4.serialized"/>
+      <string name="filename" value="../meshes/bunny_500/zoom_2_iterations_4.serialized"/>
+      <string name="filename" value="../meshes/bunny_100/zoom_2_iterations_3.serialized"/>
+      <string name="filename" value="../meshes/bunny_100/testing.serialized"/>
       -->
-      <string name="filename" value="../meshes/bunny_2000/iterations_4.serialized"/>
+      <string name="filename" value="../meshes/bunny_500/zoom_2_iterations_4.serialized"/>
 
     <!-- NOTE: transforms are NOT in reverse order in Mitsuba!" -->
     <transform name="toWorld">
@@ -92,6 +113,7 @@
     <float name="scale" value="2"/>
 	</emitter>
 
+  <!--
   <shape type="rectangle">
     <bsdf type="diffuse">
 		  <rgb name="reflectance" value="0.9 0.9 0.9"/>
@@ -100,9 +122,9 @@
       <rotate x="1" angle="34"/>
       <rotate y="1" angle="0"/>
       <rotate z="1" angle="0"/>
-      <!--<scale x="1.4" y="1.6" z="1"/>-->
       <scale x="2" y="2" z="1"/>
       <translate x="0.3" y="0.3" z="0.2"/>
     </transform>
   </shape>
+  -->
 </scene>

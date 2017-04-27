@@ -7,15 +7,11 @@ include ../include.mk
 CC         = /opt/local/bin/gcc-mp-5
 CFLAGS     = ${CFLAGS_COMMON} -I../../src/glvu/
 LDFLAGS    = ${LDFLAGS_COMMON} -framework GLUT -framework OpenGL -framework Cocoa
-EXECUTABLE = ../../bin/objViewer
+EXECUTABLE = ../../bin/scouter
 
 GEOMETRYSRC = ../../src/geometry/OBJ.cpp\
 							../../src/geometry/TRIANGLE.cpp \
-							../../src/geometry/BOX.cpp \
-							../../src/geometry/FIELD_2D.cpp \
-							../../src/geometry/FIELD_3D.cpp \
-							../../src/algebra/MATRIX3.cpp \
-							../../src/algebra/QUATERNION.cpp
+							../../src/geometry/BOX.cpp
 UTILSRC = ../../src/glvu/glvu.cpp \
 					../../src/util/TIMER.cpp
 SOURCES    = main.cpp $(GEOMETRYSRC) $(UTILSRC)

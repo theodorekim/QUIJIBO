@@ -84,7 +84,8 @@ void computeFractal(int res)
                                    optimize3D.expScaling(), 
                                    optimize3D.maxIterations(), 
                                    optimize3D.slice(), 
-                                   isosurface, 
+                                   isosurface,
+                                   optimize3D.fractal().rotation(), 
                                    cacheFilename);
 #else
   triangleMesh = new TRIANGLE_MESH(optimize3D.fractal(), optimize3D.top(), optimize3D.bottom(), optimize3D.expScaling(), optimize3D.maxIterations(), optimize3D.slice(), isosurface);
@@ -686,14 +687,18 @@ int main(int argc, char* argv[])
   optimize3D.read(filename.c_str());
   VEC3F& center = optimize3D.fractal().center();
   VEC3F& lengths = optimize3D.fractal().lengths();
+  QUATERNION& rotation = optimize3D.fractal().rotation();
 
   VEC3 centerNew  = parser.getVector3("field center", center);
   VEC3 lengthsNew = parser.getVector3("field lengths", lengths);
+  QUATERNION rotationNew = parser.getQuaternion("rotation", rotation);
 
   cout << " Original center: " << center << endl;
   cout << " Original lengths: " << lengths << endl;
+  cout << " Original rotation: " << rotation << endl;
   cout << " New center: " << centerNew << endl;
   cout << " New lengths: " << lengthsNew << endl;
+  cout << " New rotation: " << rotationNew << endl;
 
   bool recenter = parser.getBool("recenter", false);
 
@@ -709,12 +714,19 @@ int main(int argc, char* argv[])
 
   center = centerNew;
   lengths = lengthsNew;
+  rotation = rotationNew;
 
-//#if !USING_LOWMEMORY
+#if !USING_LOWMEMORY
   cout << " Allocating initial fields ... " << flush;
   optimize3D.fractal() = FIELD_3D(res,res,res, center, lengths);
+  optimize3D.fractal().rotation() = rotationNew;
   cout << " done. " << endl;
-//#endif
+#else
+  cout << " Allocating initial fields ... " << flush;
+  optimize3D.fractal() = FIELD_3D(100,100,100, center, lengths);
+  optimize3D.fractal().rotation() = rotationNew;
+  cout << " done. " << endl;
+#endif
 
   cout << " Rendering root Z translations " << endl;
   marchTranslations(rootTranslation, "translationz");

@@ -58,6 +58,8 @@ public:
                                  (_yPlus - _yMinus),
                                  (_zPlus - _zMinus)); };
 
+  void setCenter(const VEC3F& newCenter);
+
 private:
   float _xPlus, _xMinus;
   float _yPlus, _yMinus;

@@ -43,6 +43,62 @@ QUATERNION::QUATERNION(const QUATERNION& q) :
 {
 }
 
+QUATERNION::QUATERNION(const MATRIX3& matrix)
+{
+  float trace, u;
+  trace = matrix(0,0) + matrix(1,1) + matrix(2,2);
+
+  if (trace >= 0)
+  {
+    u = (float)sqrt(trace + 1);
+    _w = (float)0.5 * u;
+    u = (float)0.5 / u;
+    _x = (matrix(2,1) - matrix(1,2)) * u;
+    _y = (matrix(0,2) - matrix(2,0)) * u;
+    _z = (matrix(1,0) - matrix(0,1)) * u;
+  }
+  else
+  {
+    int i = 0;
+    if (matrix(1,1) > matrix(0,0))
+      i = 1;
+
+    //if (matrix(2,2) > (i == 0) ? matrix(0,0) : matrix(1,1))
+    if (matrix(2,2) > matrix(i,i))
+      i = 2;
+
+    switch (i)
+    {
+      case 0:
+        u = (float)sqrt((matrix(0,0) - (matrix(1,1) + matrix(2,2))) + 1);
+        _x = 0.5f * u;
+        u = 0.5f / u;
+        _y = (matrix(1,0) + matrix(0,1)) * u;
+        _z = (matrix(0,2) + matrix(2,0)) * u;
+        _w = (matrix(2,1) - matrix(1,2)) * u;
+      break;
+
+      case 1:
+        u = (float)sqrt((matrix(1,1) - (matrix(2,2) + matrix(0,0))) + 1);
+        _y = 0.5f * u;
+        u = 0.5f / u;
+        _z = (matrix(2,1) + matrix(1,2)) * u;
+        _x = (matrix(1,0) + matrix(0,1)) * u;
+        _w = (matrix(0,2) - matrix(2,0)) * u;
+      break;
+
+      case 2:
+        u = (float)sqrt((matrix(2,2) - (matrix(0,0) + matrix(1,1))) + 1);
+        _z = 0.5f * u;
+        u = 0.5f / u;
+        _x = (matrix(0,2) + matrix(2,0)) * u;
+        _y = (matrix(2,1) + matrix(1,2)) * u;
+        _w = (matrix(1,0) - matrix(0,1)) * u;
+      break;
+    }
+  }
+}
+
 QUATERNION QUATERNION::conjugate() const
 {
   QUATERNION final(_w, -_x, -_y, -_z);
@@ -316,4 +372,59 @@ QUATERNION QUATERNION::pow(const Real& exponent) const
                     scale2 * _x,
                     scale2 * _y,
                     scale2 * _z);
+}
+
+MATRIX3 QUATERNION::toRotationMatrix() const
+{
+  MATRIX3 final;
+  final(0,0) = 1 - 2 * _y * _y - 2 * _z * _z; 
+  final(0,1) = 2 * _x * _y - 2 * _w * _z;      
+  final(0,2) = 2 * _x * _z + 2 * _w * _y;
+  
+  final(1,0) = 2 * _x * _y + 2 * _w * _z;      
+  final(1,1) = 1 - 2 * _x * _x - 2 * _z * _z; 
+  final(1,2) = 2 * _y * _z - 2 * _w * _x;
+
+  final(2,0) = 2 * _x * _z - 2 * _w * _y;      
+  final(2,1) = 2 * _y * _z + 2 * _w * _x;      
+  final(2,2) = 1 - 2 * _x * _x - 2 * _y * _y;
+
+  return final;
+}
+
+//////////////////////////////////////////////////////////////////////
+// get the axis-angle representation
+// as seen in David Baraff's Physically Based Modelling notes
+//////////////////////////////////////////////////////////////////////
+void QUATERNION::axisAngle(VEC3F& axis, Real& angle)
+{
+  if ((_w >= ((float)1)) || (_w <= (float)(-1)))
+  {
+    // identity; this check is necessary to avoid problems with acos if s is 1 + eps
+    angle = 0;
+    axis[0] = 1;
+    axis[1] = 0;
+    axis[2] = 0;
+    return;
+  }
+
+  angle = 2.0 * acos(_w);
+  float sin2 = _x*_x + _y*_y + _z*_z; //sin^2(*angle / 2.0)
+
+  if (sin2 == 0)
+  {
+    // identity rotation; angle is zero, any axis is equally good
+    axis[0] = 1;
+    axis[1] = 0;
+    axis[2] = 0;
+  }
+  else
+  {
+    float inv = 1.0 / sqrt(sin2); // note: *angle / 2.0 is on [0,pi], so sin(*angle / 2.0) >= 0, and therefore the sign of sqrt can be safely taken positive
+    axis[0] = _x * inv;
+    axis[1] = _y * inv;
+    axis[2] = _z * inv;
+  }
+
+  angle = angle / (2.0 * M_PI) * 360.0f;
 }

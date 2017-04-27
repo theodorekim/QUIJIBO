@@ -3,7 +3,7 @@ include ../include.mk
 #CC         = g++
 CC         = /opt/local/bin/gcc-mp-5
 CFLAGS     = ${CFLAGS_COMMON}
-LDFLAGS    = ${LDFLAGS_COMMON}
+LDFLAGS    = ${LDFLAGS_COMMON} -framework GLUT -framework OpenGL -framework Cocoa
 EXECUTABLE = ../../bin/bunnyMarchingCubes3D
 
 SOURCES    = bunnyMarchingCubes3D.cpp \

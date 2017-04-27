@@ -233,8 +233,72 @@ VEC3 SIMPLE_PARSER::getVector3(string name, VEC3 defaultValue, bool needed)
 
   // assume what's left is a number
   ret[2] = atof(strip.c_str());
-  //cout << " Final: " << ret << endl;
-  //exit(0);
+
+	return ret;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// get a 4-vector
+//////////////////////////////////////////////////////////////////////////////
+QUATERNION SIMPLE_PARSER::getQuaternion(string name, QUATERNION defaultValue, bool needed)
+{
+	QUATERNION ret(0,0,0,0);
+  forceLower(name);
+	if(mVals.find(name) == mVals.end()) {
+		if(needed) {
+			std::cerr<<"Required value '"<<name<<"' not found in config file!\n";
+			exit(1); 
+		}
+		return defaultValue;
+	}
+
+  // get the string
+	string strip = mVals[name];
+   
+  // if the first char is a '(', stomp it
+  if (strip[0] == '(')
+    strip.erase(0,1);
+
+  // if there is a closing brace, stomp it
+  size_t closingBrace = strip.find(')');
+  if (closingBrace != string::npos)
+    strip.erase(closingBrace,1);
+
+  size_t nextComma;
+  size_t nextSpace;
+  size_t nextCut;
+ 
+  for (int x = 0; x < 3; x++)
+  { 
+    // find a comma or space
+    nextComma = strip.find(',');
+    nextSpace = strip.find(' ');
+
+    // cut at the sooner comma or space
+    if (nextComma == string::npos && nextSpace == string::npos)
+    {
+      cout << " Malformed VEC3 input named " << name.c_str() << ": " << mVals[name].c_str() << endl;
+      exit(0);
+    }
+
+    if (nextComma != string::npos && nextSpace != string::npos)
+      nextCut = (nextComma < nextSpace) ? nextComma : nextSpace;
+    else if (nextComma == string::npos)
+      nextCut = nextSpace;
+    else
+      nextCut = nextComma; 
+
+    // cut off at the next delimiter
+    string cut = strip.substr(0, nextCut);
+    ret[x] = atof(cut.c_str());
+
+    // erase up to the delimiter
+    strip = strip.erase(0, nextCut + 1);
+    strip = removeWhitespace(strip);
+  }
+
+  // assume what's left is a number
+  ret[3] = atof(strip.c_str());
 
 	return ret;
 }

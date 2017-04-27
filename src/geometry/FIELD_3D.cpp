@@ -27,7 +27,7 @@ int FIELD_3D::_quinticClamps = 0;
 ///////////////////////////////////////////////////////////////////////
 FIELD_3D::FIELD_3D(const int& xRes, const int& yRes, const int& zRes,
     const VEC3F& center, const VEC3F& lengths) :
-  _xRes(xRes), _yRes(yRes), _zRes(zRes), _center(center), _lengths(lengths)
+  _xRes(xRes), _yRes(yRes), _zRes(zRes), _center(center), _lengths(lengths), _rotation(1,0,0,0)
 {
   _totalCells = _xRes * _yRes * _zRes;
   _slabSize = _xRes * _yRes;
@@ -58,7 +58,7 @@ FIELD_3D::FIELD_3D(const int& xRes, const int& yRes, const int& zRes,
 
 FIELD_3D::FIELD_3D(const Real* data, const int& xRes, const int& yRes, const int& zRes,
     const VEC3F& center, const VEC3F& lengths) :
-  _xRes(xRes), _yRes(yRes), _zRes(zRes), _center(center), _lengths(lengths)
+  _xRes(xRes), _yRes(yRes), _zRes(zRes), _center(center), _lengths(lengths), _rotation(1,0,0,0)
 {
   _totalCells = _xRes * _yRes * _zRes;
   _slabSize = _xRes * _yRes;
@@ -87,7 +87,7 @@ FIELD_3D::FIELD_3D(const Real* data, const int& xRes, const int& yRes, const int
 }
 
 FIELD_3D::FIELD_3D(const bool* data, const int& xRes, const int& yRes, const int& zRes) :
-  _xRes(xRes), _yRes(yRes), _zRes(zRes), _center(0,0,0), _lengths(1,1,1)
+  _xRes(xRes), _yRes(yRes), _zRes(zRes), _center(0,0,0), _lengths(1,1,1), _rotation(1,0,0,0)
 {
   _totalCells = _xRes * _yRes * _zRes;
   _slabSize = _xRes * _yRes;
@@ -116,7 +116,7 @@ FIELD_3D::FIELD_3D(const bool* data, const int& xRes, const int& yRes, const int
 }
 
 FIELD_3D::FIELD_3D(const unsigned char* data, const int& xRes, const int& yRes, const int& zRes) :
-  _xRes(xRes), _yRes(yRes), _zRes(zRes), _center(0,0,0), _lengths(1,1,1)
+  _xRes(xRes), _yRes(yRes), _zRes(zRes), _center(0,0,0), _lengths(1,1,1), _rotation(1,0,0,0)
 {
   _totalCells = _xRes * _yRes * _zRes;
   _slabSize = _xRes * _yRes;
@@ -146,7 +146,7 @@ FIELD_3D::FIELD_3D(const unsigned char* data, const int& xRes, const int& yRes, 
 
 FIELD_3D::FIELD_3D(const FIELD_3D& m) :
   _xRes(m.xRes()), _yRes(m.yRes()), _zRes(m.zRes()),
-  _center(m.center()), _lengths(m.lengths())
+  _center(m.center()), _lengths(m.lengths()), _rotation(m.rotation())
 {
   _totalCells = _xRes * _yRes * _zRes;
   _slabSize = _xRes * _yRes;
@@ -176,7 +176,7 @@ FIELD_3D::FIELD_3D(const FIELD_3D& m) :
 
 FIELD_3D::FIELD_3D(const VECTOR& data, const FIELD_3D& m) :
   _xRes(m.xRes()), _yRes(m.yRes()), _zRes(m.zRes()),
-  _center(m.center()), _lengths(m.lengths())
+  _center(m.center()), _lengths(m.lengths()), _rotation(m.rotation())
 {
   _totalCells = _xRes * _yRes * _zRes;
   _slabSize = _xRes * _yRes;
@@ -206,7 +206,7 @@ FIELD_3D::FIELD_3D(const VECTOR& data, const FIELD_3D& m) :
 }
 
 FIELD_3D::FIELD_3D() :
-  _xRes(-1), _yRes(-1), _zRes(-1), _totalCells(-1), _data(NULL)
+  _xRes(-1), _yRes(-1), _zRes(-1), _totalCells(-1), _data(NULL), _rotation(1,0,0,0)
 {
 }
 
@@ -217,6 +217,7 @@ FIELD_3D::FIELD_3D(const vector<FIELD_2D>& slices)
   _xRes = slices[0].xRes();
   _yRes = slices[0].yRes();
   _zRes = slices.size();
+  _rotation = QUATERNION(1,0,0,0);
 
   _totalCells = _xRes * _yRes * _zRes;
   _slabSize = _xRes * _yRes;
@@ -830,6 +831,11 @@ VEC3F FIELD_3D::cellCenter(int x, int y, int z) const
   final[0] += _dx * 0.5;
   final[1] += _dy * 0.5;
   final[2] += _dz * 0.5;
+
+  // apply the rotation
+  final -= _center;
+  final = _rotation.toRotationMatrix() * final;
+  final += _center;
 
   return final;
 }
@@ -5394,4 +5400,108 @@ int FIELD_3D::totalNans() const
     if (isnan(_data[x])) final++;
 
   return final;
+}
+
+///////////////////////////////////////////////////////////////////////
+// draw bounding box to OpenGL
+///////////////////////////////////////////////////////////////////////
+void FIELD_3D::drawBoundingBox() const
+{
+  glLineWidth(1.0);
+
+  glPushMatrix();
+    VEC3F v000 = cellCenter(0,0,0);
+    VEC3F v001 = cellCenter(0,0,_zRes);
+    VEC3F v010 = cellCenter(0,_yRes,0);
+    VEC3F v011 = cellCenter(0,_yRes,_zRes);
+    VEC3F v100 = cellCenter(_xRes,0,0);
+    VEC3F v101 = cellCenter(_xRes,0,_zRes);
+    VEC3F v110 = cellCenter(_xRes,_yRes,0);
+    VEC3F v111 = cellCenter(_xRes, _yRes, _zRes);
+
+    glColor4f(10,10,10,1);
+
+    glBegin(GL_LINES);
+      //glVertex3fv(v000);
+      glVertex3f(v000[0], v000[1], v000[2]);
+      //glVertex3fv(v001);
+      glVertex3f(v001[0], v001[1], v001[2]);
+
+      //glVertex3fv(v001);
+      glVertex3f(v001[0], v001[1], v001[2]);
+      //glVertex3fv(v011);
+      glVertex3f(v011[0], v011[1], v011[2]);
+      
+      //glVertex3fv(v011);
+      glVertex3f(v011[0], v011[1], v011[2]);
+      //glVertex3fv(v010);
+      glVertex3f(v010[0], v010[1], v010[2]);
+
+      //glVertex3fv(v010);
+      glVertex3f(v010[0], v010[1], v010[2]);
+      //glVertex3fv(v000);
+      glVertex3f(v000[0], v000[1], v000[2]);
+
+      //glVertex3fv(v110);
+      glVertex3f(v110[0], v110[1], v110[2]);
+      //glVertex3fv(v111);
+      glVertex3f(v111[0], v111[1], v111[2]);
+      
+      //glVertex3fv(v111);
+      glVertex3f(v111[0], v111[1], v111[2]);
+      //glVertex3fv(v101);
+      glVertex3f(v101[0], v101[1], v101[2]);
+
+      //glVertex3fv(v101);
+      glVertex3f(v101[0], v101[1], v101[2]);
+      //glVertex3fv(v100);
+      glVertex3f(v100[0], v100[1], v100[2]);
+      
+      //glVertex3fv(v100);
+      glVertex3f(v100[0], v100[1], v100[2]);
+      //glVertex3fv(v110);
+      glVertex3f(v110[0], v110[1], v110[2]);
+
+      //glVertex3fv(v010);
+      glVertex3f(v010[0], v010[1], v010[2]);
+      //glVertex3fv(v110);
+      glVertex3f(v110[0], v110[1], v110[2]);
+
+      //glVertex3fv(v000);
+      glVertex3f(v000[0], v000[1], v000[2]);
+      //glVertex3fv(v100);
+      glVertex3f(v100[0], v100[1], v100[2]);
+      
+      //glVertex3fv(v111);
+      glVertex3f(v111[0], v111[1], v111[2]);
+      //glVertex3fv(v011);
+      glVertex3f(v011[0], v011[1], v011[2]);
+      
+      //glVertex3fv(v101);
+      glVertex3f(v101[0], v101[1], v101[2]);
+      //glVertex3fv(v001);
+      glVertex3f(v001[0], v001[1], v001[2]);
+    glEnd();
+  glPopMatrix();
+}
+
+void FIELD_3D::rotateX(const Real& angle)
+{
+  MATRIX3 R = MATRIX3::rotation(VEC3F(1,0,0), angle);
+  _rotation = _rotation * QUATERNION(R);
+  _rotation.normalize();
+}
+
+void FIELD_3D::rotateY(const Real& angle)
+{
+  MATRIX3 R = MATRIX3::rotation(VEC3F(0,1,0), angle);
+  _rotation = _rotation * QUATERNION(R);
+  _rotation.normalize();
+}
+
+void FIELD_3D::rotateZ(const Real& angle)
+{
+  MATRIX3 R = MATRIX3::rotation(VEC3F(0,0,1), angle);
+  _rotation = _rotation * QUATERNION(R);
+  _rotation.normalize();
 }

@@ -38,6 +38,7 @@ public:
   //QUATERNION(const __m128 v);
   QUATERNION(const VEC3F& vector);
   QUATERNION(const QUATERNION& q);
+  QUATERNION(const MATRIX3& R);
 
   // overload operators
   QUATERNION& operator=(const VEC3F& vec);
@@ -134,6 +135,13 @@ public:
 
   // dot against another quaternion
   inline Real dot(const QUATERNION& rhs) const { return _w * rhs._w + _x * rhs._x + _y * rhs._y + _z * rhs._z; };
+
+  // convert to rotation matrix -- should only use this when
+  // the quaternion is *known* to be unit length!
+  MATRIX3 toRotationMatrix() const;
+
+  // get the axis-angle representation
+  void axisAngle(VEC3F& axis, Real& angle);
 
 //private:
   // _w and _entries[0] are the real component

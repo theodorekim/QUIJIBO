@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "VEC3.h"
 #include "MATRIX3.h"
 #include "FIELD_2D.h"
+#include "QUATERNION.h"
 #include <vector>
 
 #ifndef VARNAME
@@ -105,6 +106,8 @@ public:
   int outside() const { return _outside; };
   const int& quinticClamps() const { return _quinticClamps; };
   bool initialized() const;
+  const QUATERNION rotation() const { return _rotation; };
+  QUATERNION& rotation() { return _rotation; };
 
   // scale the length of the field, update the _dx and _invDx as well
   void scaleLengths(const Real& scale);
@@ -499,6 +502,17 @@ public:
   // set all the borders to a constant
   void setBorders(const Real& value);
 
+  // do some uniform transforms
+  void translateX(const Real& value) { _center += _rotation.toRotationMatrix() * VEC3F(value,0,0); };
+  void translateY(const Real& value) { _center += _rotation.toRotationMatrix() * VEC3F(0,value,0); };
+  void translateZ(const Real& value) { _center += _rotation.toRotationMatrix() * VEC3F(0,0,value); };
+  //void translateX(const Real& value) { _center += VEC3F(value,0,0); };
+  //void translateY(const Real& value) { _center += VEC3F(0,value,0); };
+  //void translateZ(const Real& value) { _center += VEC3F(0,0,value); };
+  void rotateX(const Real& angle);
+  void rotateY(const Real& angle);
+  void rotateZ(const Real& angle);
+
 private:
   int _xRes;
   int _yRes;
@@ -537,6 +551,9 @@ private:
 
   // has this field been initialized?
   //bool _initialized;
+
+  // the current field rotation
+  QUATERNION _rotation;
 
   // do a cubic Newton interpolation
   static Real cubicNewtonInterp(Real interp, Real* points);

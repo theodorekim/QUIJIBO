@@ -54,6 +54,7 @@ public:
                 const int maxIterations, 
                 const Real slice, 
                 const Real isosurface,
+                const QUATERNION& rotation,
                 const string& cacheFilename);
   
   // non-linear marching cubes for just the quadratic Julia set
@@ -308,6 +309,9 @@ private:
   const VEC3F _dxs;
   FIELD_2D _slab0;
   FIELD_2D _slab1;
+
+  // rotation from the original field
+  const QUATERNION _fieldRotation;
 
   // add a triangle to the list
   void addTriangle(int i, int j, int k, int index);

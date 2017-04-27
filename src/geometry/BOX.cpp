@@ -175,3 +175,17 @@ void BOX::translateZ(float fraction)
   _zPlus  += fraction * length;
   _zMinus += fraction * length;
 }
+
+void BOX::setCenter(const VEC3F& newCenter)
+{
+  VEC3F lengths;
+  lengths[0] = _xPlus - _xMinus;
+  lengths[1] = _yPlus - _yMinus;
+  lengths[2] = _zPlus - _zMinus;
+  _xPlus  = newCenter[0] + lengths[0] * 0.5;
+  _xMinus = newCenter[0] - lengths[0] * 0.5;
+  _yPlus  = newCenter[1] + lengths[1] * 0.5;
+  _yMinus = newCenter[1] - lengths[1] * 0.5;
+  _zPlus  = newCenter[2] + lengths[2] * 0.5;
+  _zMinus = newCenter[2] - lengths[2] * 0.5;
+}

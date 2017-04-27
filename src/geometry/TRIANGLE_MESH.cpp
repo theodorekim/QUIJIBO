@@ -49,7 +49,8 @@ TRIANGLE_MESH::TRIANGLE_MESH(const FIELD_3D& field) :
   _res(field.res()),
   _lengths(field.lengths()), 
   _center(field.center()), 
-  _dxs(field.dx(), field.dy(), field.dz())
+  _dxs(field.dx(), field.dy(), field.dz()),
+  _fieldRotation(field.rotation())
 {
   computeStagedMarchingCubes(field);
 }
@@ -62,7 +63,8 @@ TRIANGLE_MESH::TRIANGLE_MESH(const FIELD_3D& field, const POLYNOMIAL_4D& top, co
   _res(field.res()),
   _lengths(field.lengths()), 
   _center(field.center()), 
-  _dxs(field.dx(), field.dy(), field.dz())
+  _dxs(field.dx(), field.dy(), field.dz()),
+  _fieldRotation(field.rotation())
 {
   _top = top;
   _bottom = bottom;
@@ -78,11 +80,12 @@ TRIANGLE_MESH::TRIANGLE_MESH(const FIELD_3D& field, const POLYNOMIAL_4D& top, co
 //////////////////////////////////////////////////////////////////////
 // do a non-linear marching cubes on just two slabs at a shot
 //////////////////////////////////////////////////////////////////////
-TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VEC3I& res, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface, const string& cacheFilename) :
+TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VEC3I& res, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface, const QUATERNION& rotation, const string& cacheFilename) :
   _res(res),
   _lengths(lengths), 
   _center(center), 
-  _dxs(lengths[0] / res[0], lengths[1] / res[1], lengths[2] / res[2])
+  _dxs(lengths[0] / res[0], lengths[1] / res[1], lengths[2] / res[2]),
+  _fieldRotation(rotation)
 {
   _top = top;
   _bottom = bottom;
@@ -106,7 +109,8 @@ TRIANGLE_MESH::TRIANGLE_MESH(const FIELD_3D& field, const QUATERNION& qConst, co
   _res(field.res()),
   _lengths(field.lengths()), 
   _center(field.center()), 
-  _dxs(field.dx(), field.dy(), field.dz())
+  _dxs(field.dx(), field.dy(), field.dz()),
+  _fieldRotation(field.rotation())
 {
   _maxIterations = maxIterations;
 
@@ -1702,7 +1706,7 @@ void TRIANGLE_MESH::computeNonlinearEdgeInterpolationsHuge()
   cout << " Computing huge non-linear edge interpolations ... " << flush;
   map<pair<VEC3I, VEC3I>, bool>::iterator iter;
 
-  cout << " center: " << _center << flush;
+  //cout << " center: " << _center << flush;
 
   // flatten the map out to an array now that collision are resolved
   vector<pair<VEC3I, VEC3I> > pairs;
@@ -4416,6 +4420,11 @@ VEC3F TRIANGLE_MESH::cellCenter(int x, int y, int z)
   final[0] += _dxs[0] * 0.5;
   final[1] += _dxs[1] * 0.5;
   final[2] += _dxs[2] * 0.5;
+
+  // apply the rotation
+  final -= _center;
+  final = _fieldRotation.toRotationMatrix() * final;
+  final += _center;
 
   return final;
 }

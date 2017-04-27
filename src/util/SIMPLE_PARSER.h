@@ -35,6 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <map>
 #include <VEC3.h>
+#include <QUATERNION.h>
 
 using namespace std;
 
@@ -53,6 +54,7 @@ class SIMPLE_PARSER
 		double   getFloat(string name,  double defaultValue, bool needed=false);
     string   getString(string name, string defaultValue, bool needed=false);
     VEC3     getVector3(string name, VEC3 defaultValue, bool needed=false);
+    QUATERNION getQuaternion(string name, QUATERNION defaultValue, bool needed=false);
 
 		// check if there were any unused pairs
 		bool haveUnusedValues();
