@@ -183,11 +183,11 @@ void userDisplayFunc()
     glPopMatrix();
 
     glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+    glEnable(GL_CULL_FACE);
     if (objDisplayList == 0)
       buildObjDisplayList();
     else
       glCallList(objDisplayList);
-    //objFile.draw();
 
     // draw a box outline
     glColor4f(1.0f, 1.0f, 1.0f, 10.0f);
@@ -408,19 +408,22 @@ int glvuWindow()
   glutIdleFunc(userIdleFunc);
 
   glvuVec3f ModelMin(-10,-10,-10), ModelMax(10,10,10), 
-        Eye(0.5,0.5,3), LookAtCntr(0.5,0.5,0.5), Up(0,1,0);
+        //Eye(0.5,0.5,3), LookAtCntr(0.5,0.5,0.5), Up(0,1,0);
         //Eye(-2.60453, -3.57762, 2.87471), LookAtCntr(-2.04369, -2.81653, 2.54882), Up(0.147047, 0.295801, 0.943862);
         //LookAtCntr(0.681017,0.344339, 0.841651), Eye(1.06275, -0.147389, 1.62427), Up(-0.180728, -0.870101, -0.458544);
         //Eye(1.02965, 0.247607, 0.31065), LookAtCntr(0.204498, -0.0502375, 0.79068), Up(-0.382829, -0.330058, -0.86285);
         //Eye(1.0611, 0.144932, 0.338933), LookAtCntr(0.181573, 0.136956, 0.814712), Up(-0.445088, -0.339855, -0.828491);
         //Eye(0.975366, 0.0865425, 0.430146), LookAtCntr(0.0329559, 0.23162, 0.731513), Up(-0.0605996, -0.960187, 0.272722);
+        Eye(-1.29357, 1.06427, 2.68645), LookAtCntr(-0.332213, 1.01244, 2.95685), Up(0.219111, -0.450658, -0.865397);
 
   // reset center
   VEC3 objCenter = objFile.center();
   glvuVec3f glvuCenter(objCenter[0], objCenter[1], objCenter[2]);
 
+  /*
   LookAtCntr = glvuCenter;
   Eye = glvuCenter + glvuVec3f(0,0,2.5);
+  */
 
   float Yfov = 45;
   float Aspect = 1;

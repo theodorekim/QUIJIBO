@@ -53,8 +53,8 @@
       <integer name="width" value="2560"/>
       <integer name="height" value="1920"/>
       -->
-      <integer name="width" value="640"/>
-      <integer name="height" value="480"/>
+      <integer name="width" value="2560"/>
+      <integer name="height" value="1920"/>
     </film>
 	</sensor>
 
@@ -78,8 +78,11 @@
       <string name="filename" value="../meshes/bunny_100/zoom_2_iterations_3.serialized"/>
       <string name="filename" value="../meshes/bunny_100/testing.serialized"/>
       <string name="filename" value="../meshes/bunny_500/zoom_2_iterations_4.serialized"/>
-      -->
       <string name="filename" value="../meshes/bunny_200/test.serialized"/>
+      <string name="filename" value="../meshes/bunny_1000/zoom_2_rotated_iterations_4.serialized"/>
+      <string name="filename" value="../meshes/bunny_1500/zoom_2_rotated_iterations_4.serialized"/>
+      -->
+      <string name="filename" value="../meshes/bunny_2500/zoom_2_rotated_iterations_4.serialized"/>
 
     <!-- NOTE: transforms are NOT in reverse order in Mitsuba!" -->
     <transform name="toWorld">
