@@ -29,6 +29,8 @@ origin1 = Vector(0.975366,0.0865425,0.430146)
 up1 = Vector(-0.0605996, -0.960187,0.272722)
 
 sensor = scene.getSensor()
+sensor.setShutterOpen(0)
+sensor.setShutterOpenTime(1)
 
 frames = 60
 for x in range(0,frames):
