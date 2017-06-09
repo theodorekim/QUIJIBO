@@ -57,6 +57,18 @@ public:
                 const QUATERNION& rotation,
                 const string& cacheFilename);
   
+  // try non-linear marching cubes with Lagrange evaluation
+  TRIANGLE_MESH(const VEC3F& center, 
+                const VEC3F& lengths, 
+                const VEC3I& res, 
+                const POLYNOMIAL_4D& top, 
+                const POLYNOMIAL_4D& bottom, 
+                const Real expScaling, 
+                const int maxIterations, 
+                const Real slice, 
+                const Real isosurface,
+                const QUATERNION& rotation);
+  
   // non-linear marching cubes for just the quadratic Julia set
   TRIANGLE_MESH(const FIELD_3D& field, const QUATERNION& qConst, const int maxIterations);
 
@@ -343,6 +355,7 @@ private:
 
   // compute the non-linear interpolations for matching cubes
   void computeNonlinearEdgeInterpolationsHuge();
+  void computeLagrangeNonlinearEdgeInterpolationsHuge();
 
   // compute the quadratic interpolations for matching cubes
   void computeQuadraticEdgeInterpolations();
@@ -355,13 +368,20 @@ private:
   // so need to start storing them as a triple
   void computeNonlinearMarchingCubesLowMemoryHuge();
 
+  // compute the non-linear interpolations for matching cubes, but in a memory-stingy way
+  // if the grid is too big, storing the index as a 32-bit int is insufficient,
+  // so need to start storing them as a triple
+  void computeLagrangeNonlinearMarchingCubesLowMemoryHuge();
+
   // support function for computeNonlinearMarchingCubesLowMemory(), which computes a single
   // slice of the potential function
   void computeNonlinearSlice(const int z, FIELD_2D& field);
+  void computeLagrangeNonlinearSlice(const int z, FIELD_2D& field);
 
   // compute all the slices for a low memory marching cubes
   void computeAllLowMemorySlices(vector<pair<int, int> >& flags);
   void computeAllLowMemorySlicesHuge(vector<pair<int, VEC3I> >& flags);
+  void computeLagrangeAllLowMemorySlicesHuge(vector<pair<int, VEC3I> >& flags);
 
   // compute some coarse normals for each vertex
   void computeNormals();
@@ -377,12 +397,14 @@ private:
   
   // get the nonlinear function value
   Real nonlinearValue(const VEC3F& position, const bool debug = false);
+  Real lagrangeNonlinearValue(const VEC3F& position, const bool debug = false);
   
   // get the quadratic function value
   Real quadraticValue(const VEC3F& position, const bool debug = false);
 
   // do a midpoint search
   VEC3F midpointSearch(const VEC3F& positiveVertex, const Real& positiveValue, const VEC3F& negativeVertex, const Real& negativeValue, const int recursion = 0);
+  VEC3F lagrangeMidpointSearch(const VEC3F& positiveVertex, const Real& positiveValue, const VEC3F& negativeVertex, const Real& negativeValue, const int recursion = 0);
   
   // do a midpoint search over just the quadratic
   VEC3F quadraticMidpointSearch(const VEC3F& positiveVertex, const Real& positiveValue, const VEC3F& negativeVertex, const Real& negativeValue, const int recursion = 0);

@@ -924,6 +924,22 @@ QUATERNION POLYNOMIAL_4D::evaluateScaledPowerFactored(const QUATERNION& point) c
 #endif
 
 //////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+QUATERNION POLYNOMIAL_4D::evaluateRoot(const QUATERNION& point, const int index, const bool debug) const
+{
+  QUATERNION result = point - _roots[index];
+  result = result.pow(_powerScalar * _rootPowers[index]);
+  if (debug)
+  {
+    cout << "\t diff:  " << point - _roots[index]<< endl;
+    cout << "\t power: " << _powerScalar * _rootPowers[index] << endl;
+    cout << "\t final: " << result << endl;
+  }
+
+  return result;
+}
+
+//////////////////////////////////////////////////////////////////////
 // use the brute force nested formulation
 //////////////////////////////////////////////////////////////////////
 QUATERNION POLYNOMIAL_4D::evaluateScaledPowerFactoredVerbose(const QUATERNION& point) const

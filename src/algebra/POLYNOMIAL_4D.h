@@ -59,6 +59,7 @@ public:
   // use the brute force nested formulation, but cache the multiplies
   QUATERNION evaluatePowerFactored(const QUATERNION& point, vector<QUATERNION>& forward, vector<QUATERNION>& backward) const;
   QUATERNION evaluateScaledPowerFactored(const QUATERNION& point, vector<QUATERNION>& forward, vector<QUATERNION>& backward) const;
+  QUATERNION evaluateRoot(const QUATERNION& point, const int index, const bool debug = false) const;
 
   // add a new root
   void addRoot(const QUATERNION& newRoot);

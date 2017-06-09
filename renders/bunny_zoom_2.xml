@@ -53,8 +53,8 @@
       <integer name="width" value="2560"/>
       <integer name="height" value="1920"/>
       -->
-      <integer name="width" value="2560"/>
-      <integer name="height" value="1920"/>
+      <integer name="width" value="640"/>
+      <integer name="height" value="480"/>
     </film>
 	</sensor>
 

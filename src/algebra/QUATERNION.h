@@ -143,6 +143,8 @@ public:
   // get the axis-angle representation
   void axisAngle(VEC3F& axis, Real& angle);
 
+  void debugMultiply(const QUATERNION& right);
+
 //private:
   // _w and _entries[0] are the real component
   union {

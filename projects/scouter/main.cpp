@@ -326,7 +326,8 @@ int glvuWindow()
         //Eye(0.848018, 0.105181, 0.412587), LookAtCntr(-0.0891528, -0.118941, 0.679945), Up(-0.0267212, 0.810215, 0.585525);
         //Eye(0.81415, 0.0598335, 0.437854), LookAtCntr(-0.183826, 0.112008, 0.401492), Up(0.0253124, 0.850417, 0.525507);
         //Eye(0.819703, 0.0661519, 0.39502), LookAtCntr(-0.102349, 0.00123858, 0.776606), Up(0.140805, 0.862045, 0.486882);
-        Eye(0.830368, 0.0599492, 0.400172), LookAtCntr(-0.120662, 0.0558909, 0.709244), Up(0.153079, 0.862497, 0.482356);
+        //Eye(0.830368, 0.0599492, 0.400172), LookAtCntr(-0.120662, 0.0558909, 0.709244), Up(0.153079, 0.862497, 0.482356);
+        Eye(0.760062, 0.0628541, 0.445488), LookAtCntr(-0.186215, 0.0501026, 0.768596), Up(0.153079, 0.862496, 0.482356);
 
   //glvuVec3f glvuCenter(objCenter[0], objCenter[1], objCenter[2]);
   //LookAtCntr = glvuCenter;
@@ -344,7 +345,8 @@ int glvuWindow()
   glvuMax = ModelMax;
   glvu.SetAllCams(ModelMin, ModelMax, Eye,LookAtCntr,Up, fov, aspect, near,far);
 
-  glvu.SetMoveSpeed(0.01);
+  //glvu.SetMoveSpeed(0.01);
+  glvu.SetMoveSpeed(0.0001);
   
   glvuVec3f center(objCenter[0], objCenter[1], objCenter[2]);
   glvu.SetWorldCenter(center);

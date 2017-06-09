@@ -133,6 +133,24 @@ QUATERNION operator*(const QUATERNION& left, const QUATERNION& right)
 }
 */
 
+void QUATERNION::debugMultiply(const QUATERNION& right)
+{
+  QUATERNION final;
+  cout << " \t\tx: " << final._x << " adding: " << _y * right._z << endl; 
+  cout << " \t\tpieces: " << _y << " " << right._z << endl;
+  final._x = _y * right._z;
+  cout << " \t\tx: " << final._x << " adding: " << -_z * right._y << endl; 
+  final._x += -_z * right._y; 
+  cout << " \t\tx: " << final._x << " adding: " << right._w * _x << endl; 
+  final._x += right._w * _x;
+  cout << " \t\tx: " << final._x << " adding: " << _w * right._x << endl; 
+  final._x += _w * right._x;
+  final._y = _z * right._x - _x * right._z + right._w * _y + _w * right._y;
+  final._z = _x * right._y - _y * right._x + right._w * _z + _w * right._z;
+  final._w = _w * right._w - _x * right._x - right._y * _y - _z * right._z;
+  *this = final;
+}
+
 QUATERNION operator*(const QUATERNION& left, const QUATERNION& right)
 {
   QUATERNION final;

@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 //#include <omp.h>
 #include "TIMER.h"
+#include "RATIONAL_4D.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -96,8 +97,29 @@ TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VE
   _escapeRadius = 2000.0;
   _cacheFilename = cacheFilename;
 
-  //computeNonlinearMarchingCubesLowMemory();
   computeNonlinearMarchingCubesLowMemoryHuge();
+}
+
+//////////////////////////////////////////////////////////////////////
+// do Lagrange non-linear marching cubes
+//////////////////////////////////////////////////////////////////////
+TRIANGLE_MESH::TRIANGLE_MESH(const VEC3F& center, const VEC3F& lengths, const VEC3I& res, const POLYNOMIAL_4D& top, const POLYNOMIAL_4D& bottom, const Real expScaling, const int maxIterations, const Real slice, const Real isosurface, const QUATERNION& rotation) :
+  _res(res),
+  _lengths(lengths), 
+  _center(center), 
+  _dxs(lengths[0] / res[0], lengths[1] / res[1], lengths[2] / res[2]),
+  _fieldRotation(rotation)
+{
+  _top = top;
+  _bottom = bottom;
+  _expScaling = expScaling;
+  _maxIterations = maxIterations;
+  _quaternionSlice = slice;
+  _isosurface = isosurface;
+  _escapeRadius = 2000.0;
+
+  //computeNonlinearMarchingCubesLowMemoryHuge();
+  computeLagrangeNonlinearMarchingCubesLowMemoryHuge();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -252,6 +274,54 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubes(const FIELD_3D& field, const b
     cout << "done. " << endl;
 }
 
+//////////////////////////////////////////////////////////////////////
+// support function for computeNonlinearMarchingCubesLowMemory(), 
+// which computes a single slice of the potential function
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::computeLagrangeNonlinearSlice(const int z, FIELD_2D& field)
+{
+  TIMER functionTimer(__FUNCTION__);
+  int xRes = _res[0];
+  int yRes = _res[1];
+
+  if (field.xRes() != xRes || field.yRes() != yRes)
+    field.resizeAndWipe(xRes, yRes, _center, _lengths);
+
+  //Real escape = 20.0;
+  Real escape = _escapeRadius;
+
+  RATIONAL_4D rational(_top, _bottom);
+#pragma omp parallel
+#pragma omp for schedule(dynamic)
+  for (int y = 0; y < yRes; y++)
+    for (int x = 0; x < xRes; x++)
+    {
+      VEC3F point = cellCenter(x,y,z);
+      Real xReal = point[0];
+      Real yReal = point[1];
+      Real zReal = point[2];
+
+      QUATERNION iterate(xReal, yReal, zReal, _quaternionSlice);
+   
+      Real magnitude = iterate.magnitude();
+      int totalIterations = 0;
+      while (magnitude < escape && totalIterations < _maxIterations) 
+      {
+        // TODO: switch to Lagrange version
+        iterate = rational.evaluateLagrange(iterate);
+
+        iterate *= _expScaling;
+        magnitude = iterate.magnitude();
+
+        totalIterations++;
+
+        // see if it fell into the black hole at the origin
+        if (magnitude < 10.0 * REAL_MIN)
+          totalIterations = _maxIterations;
+      }
+      field(x,y) = log(magnitude);
+    }
+}
 
 //////////////////////////////////////////////////////////////////////
 // support function for computeNonlinearMarchingCubesLowMemory(), 
@@ -645,6 +715,92 @@ void TRIANGLE_MESH::computeNonlinearMarchingCubesLowMemoryHuge()
 
   // compute the interpolations along the marching cubes edges
   computeNonlinearEdgeInterpolationsHuge();
+
+  // go back over the vertex pairs and emit the triangles
+  for (unsigned int x = 0; x < flags.size(); x++)
+  {
+    int flag = flags[x].first;
+    VEC3I index = flags[x].second;
+  
+    switch (flag)
+//#include "MARCHING_CUBES_TRIANGLES.include"
+#include "MARCHING_CUBES_TRIANGLES.include.huge"
+  }
+
+  // create the final triangles based on the vertex indices -- this
+  // couldn't be done in the inner loop because the vector keeps
+  // resizing and changing the vertex addresses
+  assert(_triangleVertices.size() % 3 == 0);
+
+  if (verbose) cout << "computed triangles: " << _triangleVertices.size() << endl;
+
+  int totalDegenerate = 0;  
+  for (unsigned int x = 0; x < _triangleVertices.size() / 3; x++)
+  {
+    VEC3F* v0 = &_vertices[_triangleVertices[3 * x]];
+    VEC3F* v1 = &_vertices[_triangleVertices[3 * x + 1]];
+    VEC3F* v2 = &_vertices[_triangleVertices[3 * x + 2]];
+
+    // ignore any degenerate triangles
+    Real dist0 = norm((*v0) - (*v1));
+    Real dist1 = norm((*v0) - (*v2));
+    Real dist2 = norm((*v1) - (*v2));
+    Real eps = 1e-7;
+    if (dist0 < eps || dist1 < eps || dist2 < eps)
+    {
+      totalDegenerate++;
+      continue;
+    }
+    _triangles.push_back(TRIANGLE(v0, v1, v2));
+  }
+  cout << " Found " << totalDegenerate << " degenerate triangles " << endl;
+
+  // all done -- throw away the indices
+  _triangleVertices.clear();
+
+  // rebuild the vertex hash
+  _vertexIndices.clear();
+  for (unsigned int x = 0; x < _vertices.size(); x++)
+    _vertexIndices[&(_vertices[x])] = x;
+
+  if (verbose)
+    cout << "done. " << endl;
+}
+
+//////////////////////////////////////////////////////////////////////
+// perform marching cubes
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::computeLagrangeNonlinearMarchingCubesLowMemoryHuge()
+{
+  bool verbose = true;
+  TIMER functionTimer(__FUNCTION__);
+
+  // clear any previous front
+  _vertices.clear();
+  _triangles.clear();
+  _vertexTripletHash.clear();
+
+  // set "outside" to something a lot bigger than the known grid bounds
+  //_outside = field.center()[0] + field.lengths()[0] * 10000;
+  _outside = _center[0] + _lengths[0] * 10000;
+ 
+  _xRes = _res[0];
+  _yRes = _res[1];
+  _zRes = _res[2];
+  _slabSize = _xRes * _yRes;
+
+  // store all the meaningful flags <flag, index>
+  vector<pair<int, VEC3I> > flags;
+
+  computeLagrangeAllLowMemorySlicesHuge(flags);
+
+  TIMER::printTimings();
+  cout << " Found " << flags.size() << " flags. " << endl;
+  cout << " Found " << _vertexTriplets.size() << " vertex triplets. " << endl;
+
+  // compute the interpolations along the marching cubes edges
+  //computeNonlinearEdgeInterpolationsHuge();
+  computeLagrangeNonlinearEdgeInterpolationsHuge();
 
   // go back over the vertex pairs and emit the triangles
   for (unsigned int x = 0; x < flags.size(); x++)
@@ -1525,6 +1681,77 @@ VEC3I TRIANGLE_MESH::getXYZ(const int index) const
 //////////////////////////////////////////////////////////////////////
 // get the nonlinear function value here
 //////////////////////////////////////////////////////////////////////
+Real TRIANGLE_MESH::lagrangeNonlinearValue(const VEC3F& position, const bool debug)
+{
+  QUATERNION iterate(position[0], position[1], position[2], _quaternionSlice);
+ 
+  // TODO: fractal should really be passing this in ...
+  const int maxIterations = _maxIterations;
+  //Real escape = 20.0;
+  const Real escape = _escapeRadius;
+
+  Real magnitude = iterate.magnitude();
+  int totalIterations = 0;
+  RATIONAL_4D rational(_top, _bottom);
+  QUATERNION previousIterate;
+  Real previousMagnitude;
+  while (magnitude < escape && totalIterations < maxIterations)
+  {
+    // TODO: make this Lagrange
+    iterate = rational.evaluateLagrange(iterate, debug);
+    iterate *= _expScaling;
+    magnitude = iterate.magnitude();
+    
+    if (debug)
+    {
+      cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+      cout << " iteration " << totalIterations << ": " << iterate << endl;
+    }
+
+    if (isinf(magnitude))
+    {
+      iterate = previousIterate;
+      magnitude = previousMagnitude;
+      break;
+    }
+
+    // cache the last iterate in case we overflow
+    previousIterate = iterate;
+    previousMagnitude = magnitude;
+
+    totalIterations++;
+
+    // see if it fell into the black hole at the origin
+    if (magnitude < 10.0 * REAL_MIN)
+      totalIterations = maxIterations;
+  }
+
+  const Real finalValue = log(magnitude) - _isosurface;
+
+  if (isinf(finalValue))
+  {
+    cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+    cout << " final: " << finalValue << endl;
+    cout << " magnitude: " << magnitude << endl;
+    cout << " iterate: " << iterate << endl;
+    cout << " isosurface: " << _isosurface << endl;
+
+    return FLT_MAX;
+  }
+
+  if (isnan(finalValue) && !debug)
+  {
+    lagrangeNonlinearValue(position, true);
+    exit(0);
+  }
+
+  //return log(magnitude) - _isosurface;
+  return finalValue;
+}
+
+//////////////////////////////////////////////////////////////////////
+// get the nonlinear function value here
+//////////////////////////////////////////////////////////////////////
 Real TRIANGLE_MESH::nonlinearValue(const VEC3F& position, const bool debug)
 {
   QUATERNION iterate(position[0], position[1], position[2], _quaternionSlice);
@@ -1538,11 +1765,13 @@ Real TRIANGLE_MESH::nonlinearValue(const VEC3F& position, const bool debug)
   int totalIterations = 0;
   while (magnitude < escape && totalIterations < maxIterations)
   {
+    /*
     if (debug)
     {
       cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
       cout << " iteration " << totalIterations << ": " << iterate << endl;
     }
+    */
     QUATERNION topEval = _top.evaluateScaledPowerFactored(iterate);
     QUATERNION bottomEval;
     
@@ -1693,6 +1922,108 @@ void TRIANGLE_MESH::computeNonlinearEdgeInterpolations()
     int secondIndex = vertexPair.second;
     _vertexPairHash[pair<int,int>(firstIndex, secondIndex)] = x;
     _vertexPairHash[pair<int,int>(secondIndex, firstIndex)] = x;
+  }
+  cout << " done. " << endl;
+}
+
+//////////////////////////////////////////////////////////////////////
+// compute the linear interpolations for matching cubes edges
+//////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::computeLagrangeNonlinearEdgeInterpolationsHuge()
+{
+  TIMER functionTimer(__FUNCTION__);
+  cout << " Computing Lagrange huge non-linear edge interpolations ... " << flush;
+  map<pair<VEC3I, VEC3I>, bool>::iterator iter;
+
+  //cout << " center: " << _center << flush;
+
+  // flatten the map out to an array now that collision are resolved
+  vector<pair<VEC3I, VEC3I> > pairs;
+  for (iter = _vertexTriplets.begin(); iter != _vertexTriplets.end(); iter++)
+  {
+    pair<VEC3I,VEC3I> vertexPair = iter->first;
+    pairs.push_back(vertexPair);
+  }
+
+  // compute the actual vertices
+  _vertices.clear();
+  _vertices.resize(pairs.size());
+  const int size = pairs.size();
+
+  cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+  cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+  cout << " PARALLEL OFF " << endl;
+  cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+  cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+//#pragma omp parallel
+//#pragma omp for  schedule(dynamic)
+  for (int x = 0; x < size; x++)
+  {
+    pair<VEC3I,VEC3I>& vertexPair = pairs[x];
+
+    VEC3I& firstXYZ = vertexPair.first;
+    VEC3F firstVertex = cellCenter(firstXYZ[0], firstXYZ[1], firstXYZ[2]);
+    //Real firstValue = nonlinearValue(firstVertex, false);
+    Real firstValue = lagrangeNonlinearValue(firstVertex, false);
+    
+    VEC3I& secondXYZ = vertexPair.second;
+    VEC3F secondVertex = cellCenter(secondXYZ[0], secondXYZ[1], secondXYZ[2]);
+    //Real secondValue = nonlinearValue(secondVertex, false);
+    Real secondValue = lagrangeNonlinearValue(secondVertex, false);
+
+    VEC3F positiveVertex = firstVertex;
+    Real positiveValue = firstValue;
+    VEC3F negativeVertex = secondVertex;
+    Real negativeValue = secondValue;
+
+    if (positiveValue * negativeValue >= 0.0)
+    {
+    #pragma omp critical
+      {
+        cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+        cout << " field dims: " << endl;
+        cout << " res: " << _res << endl;
+        cout << " lengths: " << _lengths << endl;
+        cout << " center:  " << _center << endl;
+        cout << " dxs:     " << _dxs << endl;
+        cout << " p vertex: " << positiveVertex << " n vertex: " << negativeVertex << endl;
+        cout << " first XYZ: " << firstXYZ << " second XYZ:" << secondXYZ << endl;
+
+        cout << " positive:           " << positiveValue                                << " negative:           " << negativeValue << endl;
+
+        exit(0);
+      }
+    }
+
+    //assert(positiveValue * negativeValue < 0.0);
+
+    if (firstValue < 0)
+    {
+      positiveVertex = secondVertex;
+      positiveValue = secondValue;
+      negativeVertex = firstVertex;
+      negativeValue = firstValue;
+    }
+
+    // this turns the midpoint search on and off. If you want to compare to just traditional
+    // marching cubes with linear interpolation, set this to 0.
+    //VEC3F finalVertex = midpointSearch(positiveVertex, positiveValue, negativeVertex, negativeValue);
+    VEC3F finalVertex = lagrangeMidpointSearch(positiveVertex, positiveValue, negativeVertex, negativeValue);
+    
+    _vertices[x] = finalVertex;
+    if (x % (int)(size / 10) == 0)
+      cout << 100 * ((Real)x / size) << "% " << flush;
+  }
+
+  // hash where each vertex is so the triangle construction looking for it later can find it
+  _vertexTripletHash.clear();
+  for (unsigned int x = 0; x < pairs.size(); x++)
+  {
+    pair<VEC3I,VEC3I> vertexTriplet = pairs[x];
+    VEC3I firstIndex = vertexTriplet.first;
+    VEC3I secondIndex = vertexTriplet.second;
+    _vertexTripletHash[pair<VEC3I,VEC3I>(firstIndex, secondIndex)] = x;
+    _vertexTripletHash[pair<VEC3I,VEC3I>(secondIndex, firstIndex)] = x;
   }
   cout << " done. " << endl;
 }
@@ -1937,6 +2268,57 @@ VEC3F TRIANGLE_MESH::midpointSearch(const VEC3F& positiveVertex, const Real& pos
 
   return midpointSearch(midpointVertex, midpointValue,
                         negativeVertex, negativeValue, recursion + 1);
+}
+
+//////////////////////////////////////////////////////////////////////
+// do a midpoint search
+//////////////////////////////////////////////////////////////////////
+VEC3F TRIANGLE_MESH::lagrangeMidpointSearch(const VEC3F& positiveVertex, const Real& positiveValue, 
+                                            const VEC3F& negativeVertex, const Real& negativeValue, const int recursion)
+{
+  VEC3F midpointVertex = positiveVertex + negativeVertex;
+  midpointVertex *= 0.5;
+  if (positiveValue * negativeValue >= 0.0)
+  {
+    // if this gets tripped, and you're using floats or doubles,
+    // you may need to bump up the precision of your representation
+#pragma omp critical
+    {
+      cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+      cout << " positive: " << positiveValue << " negative: " << negativeValue << endl;
+      cout << " p vertex: " << positiveVertex << " n vertex: " << negativeVertex << endl;
+      cout << " recursion: " << recursion << endl;
+      exit(0);
+    }
+
+    return midpointVertex;
+  }
+
+  // this resolves roughly millimeter level details if a grid edge is a meter
+  //if (recursion >= 8)
+  if (recursion >= 6)
+  {
+    return midpointVertex;
+  }
+
+  //Real midpointValue = nonlinearValue(midpointVertex);
+  Real midpointValue = lagrangeNonlinearValue(midpointVertex);
+  cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << endl;
+  cout << " positive: " << positiveValue << endl;
+  cout << " negative: " << negativeValue << endl;
+  cout << " midpoint: " << midpointValue << endl;
+  cout << " recursion: " << recursion << endl;
+  if (fabs(midpointValue) < 1e-8)
+  {
+    return midpointVertex;
+  }
+
+  if (midpointValue < 0)
+    return lagrangeMidpointSearch(positiveVertex, positiveValue,
+                                  midpointVertex, midpointValue, recursion + 1);
+
+  return lagrangeMidpointSearch(midpointVertex, midpointValue,
+                                negativeVertex, negativeValue, recursion + 1);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -4524,6 +4906,77 @@ void TRIANGLE_MESH::computeAllLowMemorySlicesHuge(vector<pair<int, VEC3I> >& fla
 
     // compute the next needed slice on the fly
     computeNonlinearSlice(z + 1, slab1);
+    totalNans += slab1.totalNans();
+    totalInfs += slab1.totalInfs();
+
+    for (int y = 0; y < _yRes - 1; y++)
+      for (int x = 0; x < _xRes - 1; x++) 
+      {
+        //int index = x + y * _xRes + z * _slabSize;
+        VEC3I index(x,y,z);
+
+        CUBE cube;
+        cube.NNN = slab0(x,y);
+        cube.NNP = slab1(x,y);
+        cube.NPN = slab0(x,y + 1);
+        cube.NPP = slab1(x,y + 1);
+        cube.PNN = slab0(x + 1,y);
+        cube.PNP = slab1(x + 1,y);
+        cube.PPN = slab0(x + 1,y + 1);
+        cube.PPP = slab1(x + 1,y + 1);
+		
+        // construct the flag
+        int flag =    ((cube.NNN > 0) + 2 *   (cube.NNP > 0) + 4  * (cube.NPN > 0) +
+                   8 * (cube.NPP > 0) + 16 *  (cube.PNN > 0) + 32 * (cube.PNP > 0) +
+                   64 *(cube.PPN > 0) + 128 * (cube.PPP > 0));
+
+        if (flag == 0 || flag == 255) continue;
+
+        flags.push_back(pair<int, VEC3I>(flag, index));
+		
+        // three vertices are added to _vertexPairs here  
+        switch (flag)
+//#include "MARCHING_CUBES_VERTICES.include" 
+#include "MARCHING_CUBES_VERTICES.include.huge" 
+      }
+    if (z % (int)(_zRes / 10) == 0)
+      cout << 100 * ((Real)z / _zRes) << "% " << flush;
+  }
+  cout << " done." << endl;
+  cout << " infs: " << totalInfs << endl;
+  cout << " NaNs: " << totalNans << endl;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// compute all the slices for a low memory marching cubes
+////////////////////////////////////////////////////////////////////////////
+void TRIANGLE_MESH::computeLagrangeAllLowMemorySlicesHuge(vector<pair<int, VEC3I> >& flags)
+{
+  TIMER functionTimer(__FUNCTION__);
+
+  // number of nans and infs
+  int totalNans = 0;
+  int totalInfs = 0;
+
+  FIELD_2D& slab0 = _slab0;
+  FIELD_2D& slab1 = _slab1;
+  //computeNonlinearSlice(0, slab1);
+  computeLagrangeNonlinearSlice(0, slab1);
+  totalNans += slab1.totalNans();
+  totalInfs += slab1.totalInfs();
+
+  // build all the vertex pairs 
+  _vertexTriplets.clear();
+  for (int z = 0; z < _zRes - 1; z++)
+  {
+    // swap in the old "next" slice as the new current ont
+    FIELD_2D& old = slab0;
+    slab0 = slab1;
+    slab1 = old;
+
+    // compute the next needed slice on the fly
+    //computeNonlinearSlice(z + 1, slab1);
+    computeLagrangeNonlinearSlice(z + 1, slab1);
     totalNans += slab1.totalNans();
     totalInfs += slab1.totalInfs();
 
