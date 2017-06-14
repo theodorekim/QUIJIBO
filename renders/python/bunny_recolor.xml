@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<scene version="0.5.0">
+  <integrator type="path">
+    <integer name="emitterSamples" value="256"/>
+    <integer name="bsdfSamples" value="256"/>
+    <boolean name="hideEmitters" value="true"/>
+    <integer name="maxDepth" value="10"/>
+  </integrator>
+
+  <sensor type="perspective">
+		<transform name="toWorld">
+      <lookat target = "-0.124628,0.0621849,0.699249" origin = "0.828353,0.0625171,0.39622" up = "0.153079, 0.862496,0.482355"/>
+    </transform>
+		<float name="fov" value="45"/>
+    <string name="fovAxis" value="y"/>
+    <float name="nearClip" value="0.001"/>
+    <float name="farClip" value="10"/>
+    <float name="focusDistance" value="1000"/>
+
+		<sampler type="ldsampler">
+			<integer name="sampleCount" value="64"/>
+		</sampler>
+
+    <film type="hdrfilm" id="film">
+      <boolean name="banner" value="false"/>
+      <string name="pixelFormat" value="rgba"/>
+      <!--
+      <integer name="width" value="320"/>
+      <integer name="height" value="240"/>
+      
+      <integer name="width" value="640"/>
+      <integer name="height" value="480"/>
+      
+      <integer name="width" value="1280"/>
+      <integer name="height" value="960"/>
+      
+      <integer name="width" value="2560"/>
+      <integer name="height" value="1920"/>
+      
+      <integer name="width" value="5120"/>
+      <integer name="height" value="3840"/>
+      
+      <integer name="width" value="10240"/>
+      <integer name="height" value="7680"/>
+      -->
+      <integer name="width" value="1280"/>
+      <integer name="height" value="960"/>
+    </film>
+	</sensor>
+
+  <shape type="serialized">
+    <string name="filename" value="../meshes/bunny_2500/zoom_2_rotated_iterations_4.serialized"/>
+
+    <!-- NOTE: transforms are NOT in reverse order in Mitsuba!" -->
+    <transform name="toWorld">
+      <translate x="0" y="0" z="-1.41"/>
+      <translate x="-0.1" y="-0.8" z="0.3"/>
+      <rotate y="1" angle="-175"/>
+      <rotate x="1" angle="-89"/>
+      <scale x="0.25" y="0.25" z="0.25"/>
+      <translate x="0.5" y="0.5" z="0.5"/>
+    </transform>
+
+    <bsdf type="roughconductor">
+      <string name="material" value="CuO"/>
+      <float name="alpha" value="0.15"/>
+    </bsdf>
+  </shape>
+  <emitter type="envmap" id="Area_002-light">
+    <string name="filename" value="envmap.exr"/>
+  </emitter>
+</scene>
